@@ -12,6 +12,10 @@
 .casa {
     width: 100%;
     height: 100%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .clara {
@@ -20,4 +24,12 @@
 
 .escura {
     background-color: #b58863;
+}
+
+.peca {
+    width: 85%;
+    height: 85%;
+    object-fit: contain;
+    user-select: none;
+    pointer-events: none;
 }
