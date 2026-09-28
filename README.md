@@ -2,6 +2,21 @@ adicionar a Marjorye como colaboradora
 Marjoryedev1
 
 
+
+PRIMEIRA VEZ QUE FOR COLOCAR OS NOVOS ARQUIVOS, utilizar esse comando: SELECIONA O HTDOCS NO OPEN FOLDER git clone https://github.com/Aquelephx/Chess-2.git
+(depois não precisa mais)
+
+antes de começar a editar, colocar esse comando no terminal:
+git pull origin main
+
+terminou de editar, rodar esses comandos na terminal em sequência:
+git add .
+
+git commit -m "Escreva teu texto"
+
+git push origin main
+
+
 vc copia isso aqui pro .env
 #--------------------------------------------------------------------
 # Example Environment Configuration file
