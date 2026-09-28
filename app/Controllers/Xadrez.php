@@ -6,6 +6,6 @@ class Xadrez extends BaseController
 {
     public function index()
     {
-        return view('xadrez');
+        return view('jogo/xadrez');
     }
 }
