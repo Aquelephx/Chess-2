@@ -1,0 +1,23 @@
+#tabuleiro {
+    width: 640px;
+    height: 640px;
+
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+
+    border: 2px solid black;
+}
+
+.casa {
+    width: 100%;
+    height: 100%;
+}
+
+.clara {
+    background-color: #f0d9b5;
+}
+
+.escura {
+    background-color: #b58863;
+}
