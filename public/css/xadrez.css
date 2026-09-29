@@ -241,3 +241,92 @@ body {
     }
 
 }
+#historico {
+    width: 280px;
+    max-height: 500px;
+    margin-left: 20px;
+
+    background: #262421;
+    border: 1px solid #444;
+    border-radius: 8px;
+
+    color: #ffffff;
+
+    font-family: Arial, sans-serif;
+
+    box-sizing: border-box;
+
+    overflow: hidden;
+}
+
+.historico-titulo {
+    padding: 12px 14px;
+
+    font-size: 18px;
+    font-weight: bold;
+
+    border-bottom: 1px solid #444;
+
+    background: #302e2b;
+}
+
+.lista-historico {
+    max-height: 450px;
+
+    overflow-y: auto;
+}
+
+.linha-historico {
+    display: grid;
+
+    grid-template-columns: 35px 1fr 1fr;
+
+    padding: 8px 10px;
+
+    font-size: 15px;
+
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.numero-movimento {
+    color: #888;
+}
+
+.movimento-branco,
+.movimento-preto {
+    color: #eee;
+}
+
+.linha-historico:nth-child(even) {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.lista-historico::-webkit-scrollbar {
+    width: 6px;
+}
+
+.lista-historico::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 10px;
+}
+
+@media (max-width: 900px) {
+
+    body {
+        flex-direction: column;
+    }
+
+    #historico {
+        width: 100%;
+        max-width: 640px;
+
+        margin-left: 0;
+        margin-top: 20px;
+
+        max-height: 250px;
+    }
+
+    .lista-historico {
+        max-height: 200px;
+    }
+}
