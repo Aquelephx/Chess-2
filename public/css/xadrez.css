@@ -32,14 +32,13 @@ body {
     position: relative;
 }
 
-.clara {
-    background-color: #000000;
+.casa.clara {
+    background-color: #f0d9b5;
 }
 
-.escura {
-    background-color: #e7e3e7;
+.casa.escura {
+    background-color: #b58863;
 }
-
 .peca {
     width: 80%;
     height: 80%;
