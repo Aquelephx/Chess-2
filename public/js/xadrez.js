@@ -33,16 +33,10 @@ function criarInterface() {
         tabuleiro.parentElement;
 
     if (!areaTabuleiro.classList.contains('area-tabuleiro')) {
-        const wrapper =
-            document.createElement('div');
+        const wrapper = document.createElement('div');
+        wrapper.className = 'area-tabuleiro';
 
-        wrapper.className =
-            'area-tabuleiro';
-
-        tabuleiro.parentNode.insertBefore(
-            wrapper,
-            tabuleiro
-        );
+        tabuleiro.parentNode.insertBefore( wrapper, tabuleiro );
 
         wrapper.appendChild(tabuleiro);
 
@@ -161,7 +155,6 @@ function criarInterface() {
     atualizarBotaoDesfazer();
 }
 
-
 /* =====================================================
    TELA DE FIM DE JOGO
    ===================================================== */
@@ -207,7 +200,6 @@ function criarTelaFimDeJogo() {
         );
 }
 
-
 /* =====================================================
    MOSTRAR FIM DE JOGO
    ===================================================== */
@@ -240,7 +232,6 @@ function mostrarFimDeJogo(
     );
 }
 
-
 /* =====================================================
    FECHAR FIM DE JOGO
    ===================================================== */
@@ -255,7 +246,6 @@ function fecharFimDeJogo() {
         );
     }
 }
-
 
 /* =====================================================
    TURNO
@@ -275,7 +265,6 @@ function atualizarTurno() {
             : 'Vez das Pretas';
 }
 
-
 /* =====================================================
    BOTÃO DESFAZER
    ===================================================== */
@@ -291,7 +280,6 @@ function atualizarBotaoDesfazer() {
     botao.disabled =
         pilhaDesfazer.length === 0;
 }
-
 
 /* =====================================================
    SALVAR ESTADO
@@ -325,7 +313,6 @@ function salvarEstado() {
 
     atualizarBotaoDesfazer();
 }
-
 
 /* =====================================================
    DESFAZER
@@ -372,7 +359,6 @@ function desfazerJogada() {
     atualizarBotaoDesfazer();
 }
 
-
 /* =====================================================
    NOVA PARTIDA
    ===================================================== */
@@ -407,7 +393,6 @@ function novaPartida() {
     atualizarBotaoDesfazer();
 }
 
-
 /* =====================================================
    LIMPAR SELEÇÃO
    ===================================================== */
@@ -428,7 +413,6 @@ function limparSelecao() {
                 'captura'
             );
         });
-
     casaSelecionada = null;
 }
 
@@ -443,26 +427,24 @@ function obterPeca(
 ) {
     const casa =
         pegarCasa(
-            linha,
-            coluna
-        );
+        linha,
+        coluna
+    );
 
     if (!casa) {
-        return null;
+    return null;
     }
 
     const peca =
         casa.querySelector(
-            '.peca'
-        );
+        '.peca'
+    );
 
     if (!peca) {
-        return null;
+    return null;
     }
-
     return peca.dataset.peca;
 }
-
 
 /* =====================================================
    OBTER ELEMENTO DA PEÇA
@@ -474,19 +456,18 @@ function obterElementoPeca(
 ) {
     const casa =
         pegarCasa(
-            linha,
-            coluna
-        );
+        linha,
+        coluna
+    );
 
     if (!casa) {
-        return null;
+    return null;
     }
 
     return casa.querySelector(
-        '.peca'
+    '.peca'
     );
 }
-
 
 /* =====================================================
    COR DA PEÇA
@@ -494,14 +475,13 @@ function obterElementoPeca(
 
 function corDaPeca(peca) {
     if (!peca) {
-        return null;
+    return null;
     }
 
     return peca[0] === 'w'
-        ? 'w'
-        : 'b';
+    ? 'w'
+    : 'b';
 }
-
 
 /* =====================================================
    TIPO DA PEÇA
@@ -509,9 +489,8 @@ function corDaPeca(peca) {
 
 function tipoDaPeca(peca) {
     if (!peca) {
-        return null;
+    return null;
     }
-
     return peca[1];
 }
 
