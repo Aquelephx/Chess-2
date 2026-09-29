@@ -9,7 +9,6 @@ const pecas = {
         'bR', 'bN', 'bB', 'bQ',
         'bK', 'bB', 'bN', 'bR'
     ],
-
     brancas: [
         'wR', 'wN', 'wB', 'wQ',
         'wK', 'wB', 'wN', 'wR'
@@ -17,154 +16,445 @@ const pecas = {
 };
 
 let casaSelecionada = null;
-
 let turno = 'w';
-
 let jogoEncerrado = false;
-
 let promocaoPendente = null;
-
-/*
-|--------------------------------------------------------------------------
-| ÚLTIMO MOVIMENTO
-|--------------------------------------------------------------------------
-*/
-
 let ultimoMovimento = null;
-
-/*
-|--------------------------------------------------------------------------
-| HISTÓRICO
-|--------------------------------------------------------------------------
-*/
-
 let historicoMovimentos = [];
+let pilhaDesfazer = [];
 
-/*
-|--------------------------------------------------------------------------
-| MOVIMENTO PENDENTE DE PROMOÇÃO
-|--------------------------------------------------------------------------
-*/
 
-let movimentoPromocaoPendente = null;
+/* =====================================================
+   CONFIGURAÇÃO DA INTERFACE
+   ===================================================== */
 
-/*
-|--------------------------------------------------------------------------
-| CRIAR PAINEL DE HISTÓRICO
-|--------------------------------------------------------------------------
-*/
+function criarInterface() {
+    let areaTabuleiro =
+        tabuleiro.parentElement;
 
-function criarHistorico() {
+    if (!areaTabuleiro.classList.contains('area-tabuleiro')) {
+        const wrapper =
+            document.createElement('div');
 
-    let historico = document.getElementById('historico');
+        wrapper.className =
+            'area-tabuleiro';
 
-    if (historico) {
+        tabuleiro.parentNode.insertBefore(
+            wrapper,
+            tabuleiro
+        );
+
+        wrapper.appendChild(tabuleiro);
+
+        areaTabuleiro = wrapper;
+    }
+
+    let container =
+        areaTabuleiro.parentElement;
+
+    if (!container.classList.contains('xadrez-container')) {
+        const novoContainer =
+            document.createElement('div');
+
+        novoContainer.className =
+            'xadrez-container';
+
+        areaTabuleiro.parentNode.insertBefore(
+            novoContainer,
+            areaTabuleiro
+        );
+
+        novoContainer.appendChild(
+            areaTabuleiro
+        );
+
+        container = novoContainer;
+    }
+
+    let turnoElemento =
+        document.getElementById('turno');
+
+    if (!turnoElemento) {
+        turnoElemento =
+            document.createElement('div');
+
+        turnoElemento.id =
+            'turno';
+
+        turnoElemento.className =
+            'turno';
+
+        areaTabuleiro.insertBefore(
+            turnoElemento,
+            tabuleiro
+        );
+    }
+
+    let controles =
+        document.getElementById('controles');
+
+    if (!controles) {
+        controles =
+            document.createElement('div');
+
+        controles.id =
+            'controles';
+
+        controles.className =
+            'controles';
+
+        areaTabuleiro.appendChild(
+            controles
+        );
+    }
+
+    let botaoDesfazer =
+        document.getElementById('desfazer');
+
+    if (!botaoDesfazer) {
+        botaoDesfazer =
+            document.createElement('button');
+
+        botaoDesfazer.id =
+            'desfazer';
+
+        botaoDesfazer.className =
+            'controle-botao';
+
+        botaoDesfazer.textContent =
+            'Desfazer';
+
+        controles.appendChild(
+            botaoDesfazer
+        );
+    }
+
+    let botaoNova =
+        document.getElementById('novaPartida');
+
+    if (!botaoNova) {
+        botaoNova =
+            document.createElement('button');
+
+        botaoNova.id =
+            'novaPartida';
+
+        botaoNova.className =
+            'controle-botao';
+
+        botaoNova.textContent =
+            'Nova partida';
+
+        controles.appendChild(
+            botaoNova
+        );
+    }
+
+    botaoDesfazer.onclick =
+        desfazerJogada;
+
+    botaoNova.onclick =
+        novaPartida;
+
+    criarTelaFimDeJogo();
+    atualizarTurno();
+    atualizarBotaoDesfazer();
+}
+
+
+/* =====================================================
+   TELA DE FIM DE JOGO
+   ===================================================== */
+
+function criarTelaFimDeJogo() {
+    if (document.getElementById('fimJogo')) {
         return;
     }
 
-    historico = document.createElement('div');
+    const overlay =
+        document.createElement('div');
 
-    historico.id = 'historico';
+    overlay.id =
+        'fimJogo';
 
-    historico.innerHTML = `
-        <div class="historico-titulo">
-            Histórico
+    overlay.className =
+        'fim-jogo';
+
+    overlay.innerHTML = `
+        <div class="fim-jogo-caixa">
+            <h2 id="fimJogoTitulo"></h2>
+
+            <p id="fimJogoTexto"></p>
+
+            <button
+                id="botaoNovaPartidaFim"
+                class="botao-nova-partida"
+            >
+                Nova partida
+            </button>
         </div>
-
-        <div id="listaHistorico" class="lista-historico"></div>
     `;
 
-    document.body.appendChild(historico);
+    document.body.appendChild(
+        overlay
+    );
+
+    document
+        .getElementById('botaoNovaPartidaFim')
+        .addEventListener(
+            'click',
+            novaPartida
+        );
 }
 
-/*
-|--------------------------------------------------------------------------
-| ATUALIZAR HISTÓRICO NA TELA
-|--------------------------------------------------------------------------
-*/
 
-function atualizarHistorico() {
+/* =====================================================
+   MOSTRAR FIM DE JOGO
+   ===================================================== */
 
-    const lista = document.getElementById('listaHistorico');
+function mostrarFimDeJogo(
+    titulo,
+    texto
+) {
+    const overlay =
+        document.getElementById('fimJogo');
 
-    if (!lista) {
+    const tituloElemento =
+        document.getElementById('fimJogoTitulo');
+
+    const textoElemento =
+        document.getElementById('fimJogoTexto');
+
+    if (!overlay) {
         return;
     }
 
-    lista.innerHTML = '';
+    tituloElemento.textContent =
+        titulo;
 
-    for (
-        let i = 0;
-        i < historicoMovimentos.length;
-        i += 2
-    ) {
+    textoElemento.textContent =
+        texto;
 
-        const numero = Math.floor(i / 2) + 1;
-
-        const brancas = historicoMovimentos[i] || '';
-
-        const pretas = historicoMovimentos[i + 1] || '';
-
-        const linha = document.createElement('div');
-
-        linha.className = 'linha-historico';
-
-        linha.innerHTML = `
-            <span class="numero-movimento">
-                ${numero}.
-            </span>
-
-            <span class="movimento-branco">
-                ${brancas}
-            </span>
-
-            <span class="movimento-preto">
-                ${pretas}
-            </span>
-        `;
-
-        lista.appendChild(linha);
-    }
-
-    lista.scrollTop = lista.scrollHeight;
+    overlay.classList.add(
+        'ativo'
+    );
 }
 
-/*
-|--------------------------------------------------------------------------
-| LIMPAR SELEÇÃO
-|--------------------------------------------------------------------------
-*/
+
+/* =====================================================
+   FECHAR FIM DE JOGO
+   ===================================================== */
+
+function fecharFimDeJogo() {
+    const overlay =
+        document.getElementById('fimJogo');
+
+    if (overlay) {
+        overlay.classList.remove(
+            'ativo'
+        );
+    }
+}
+
+
+/* =====================================================
+   TURNO
+   ===================================================== */
+
+function atualizarTurno() {
+    const elemento =
+        document.getElementById('turno');
+
+    if (!elemento) {
+        return;
+    }
+
+    elemento.textContent =
+        turno === 'w'
+            ? 'Vez das Brancas'
+            : 'Vez das Pretas';
+}
+
+
+/* =====================================================
+   BOTÃO DESFAZER
+   ===================================================== */
+
+function atualizarBotaoDesfazer() {
+    const botao =
+        document.getElementById('desfazer');
+
+    if (!botao) {
+        return;
+    }
+
+    botao.disabled =
+        pilhaDesfazer.length === 0;
+}
+
+
+/* =====================================================
+   SALVAR ESTADO
+   ===================================================== */
+
+function salvarEstado() {
+    pilhaDesfazer.push({
+        tabuleiro:
+            tabuleiro.innerHTML,
+
+        turno,
+
+        jogoEncerrado,
+
+        ultimoMovimento:
+            ultimoMovimento
+                ? JSON.parse(
+                    JSON.stringify(
+                        ultimoMovimento
+                    )
+                )
+                : null,
+
+        historicoMovimentos:
+            JSON.parse(
+                JSON.stringify(
+                    historicoMovimentos
+                )
+            )
+    });
+
+    atualizarBotaoDesfazer();
+}
+
+
+/* =====================================================
+   DESFAZER
+   ===================================================== */
+
+function desfazerJogada() {
+    if (
+        pilhaDesfazer.length === 0 ||
+        promocaoPendente
+    ) {
+        return;
+    }
+
+    const estado =
+        pilhaDesfazer.pop();
+
+    tabuleiro.innerHTML =
+        estado.tabuleiro;
+
+    turno =
+        estado.turno;
+
+    jogoEncerrado =
+        estado.jogoEncerrado;
+
+    ultimoMovimento =
+        estado.ultimoMovimento;
+
+    historicoMovimentos =
+        estado.historicoMovimentos;
+
+    limparSelecao();
+
+    fecharFimDeJogo();
+
+    atualizarXeque();
+
+    atualizarTurno();
+
+    atualizarHistorico();
+
+    atualizarUltimoMovimentoVisual();
+
+    atualizarBotaoDesfazer();
+}
+
+
+/* =====================================================
+   NOVA PARTIDA
+   ===================================================== */
+
+function novaPartida() {
+    fecharFimDeJogo();
+
+    promocaoPendente = null;
+
+    turno = 'w';
+
+    jogoEncerrado = false;
+
+    ultimoMovimento = null;
+
+    historicoMovimentos = [];
+
+    pilhaDesfazer = [];
+
+    criarTabuleiro();
+
+    limparSelecao();
+
+    atualizarXeque();
+
+    atualizarTurno();
+
+    atualizarHistorico();
+
+    atualizarUltimoMovimentoVisual();
+
+    atualizarBotaoDesfazer();
+}
+
+
+/* =====================================================
+   LIMPAR SELEÇÃO
+   ===================================================== */
 
 function limparSelecao() {
+    document
+        .querySelectorAll('.casa')
+        .forEach(casa => {
+            casa.classList.remove(
+                'selecionada'
+            );
 
-    document.querySelectorAll('.casa').forEach(casa => {
+            casa.classList.remove(
+                'movimento'
+            );
 
-        casa.classList.remove('selecionada');
-
-        casa.classList.remove('movimento');
-
-        casa.classList.remove('captura');
-
-    });
+            casa.classList.remove(
+                'captura'
+            );
+        });
 
     casaSelecionada = null;
 }
 
-/*
-|--------------------------------------------------------------------------
-| OBTER PEÇA
-|--------------------------------------------------------------------------
-*/
 
-function obterPeca(linha, coluna) {
+/* =====================================================
+   OBTER PEÇA
+   ===================================================== */
 
-    const casa = pegarCasa(linha, coluna);
+function obterPeca(
+    linha,
+    coluna
+) {
+    const casa =
+        pegarCasa(
+            linha,
+            coluna
+        );
 
     if (!casa) {
         return null;
     }
 
-    const peca = casa.querySelector('.peca');
+    const peca =
+        casa.querySelector(
+            '.peca'
+        );
 
     if (!peca) {
         return null;
@@ -173,46 +463,51 @@ function obterPeca(linha, coluna) {
     return peca.dataset.peca;
 }
 
-/*
-|--------------------------------------------------------------------------
-| OBTER ELEMENTO DA PEÇA
-|--------------------------------------------------------------------------
-*/
 
-function obterElementoPeca(linha, coluna) {
+/* =====================================================
+   OBTER ELEMENTO DA PEÇA
+   ===================================================== */
 
-    const casa = pegarCasa(linha, coluna);
+function obterElementoPeca(
+    linha,
+    coluna
+) {
+    const casa =
+        pegarCasa(
+            linha,
+            coluna
+        );
 
     if (!casa) {
         return null;
     }
 
-    return casa.querySelector('.peca');
+    return casa.querySelector(
+        '.peca'
+    );
 }
 
-/*
-|--------------------------------------------------------------------------
-| COR DA PEÇA
-|--------------------------------------------------------------------------
-*/
+
+/* =====================================================
+   COR DA PEÇA
+   ===================================================== */
 
 function corDaPeca(peca) {
-
     if (!peca) {
         return null;
     }
 
-    return peca[0] === 'w' ? 'w' : 'b';
+    return peca[0] === 'w'
+        ? 'w'
+        : 'b';
 }
 
-/*
-|--------------------------------------------------------------------------
-| TIPO DA PEÇA
-|--------------------------------------------------------------------------
-*/
+
+/* =====================================================
+   TIPO DA PEÇA
+   ===================================================== */
 
 function tipoDaPeca(peca) {
-
     if (!peca) {
         return null;
     }
@@ -220,28 +515,34 @@ function tipoDaPeca(peca) {
     return peca[1];
 }
 
-/*
-|--------------------------------------------------------------------------
-| COORDENADAS
-|--------------------------------------------------------------------------
-*/
+
+/* =====================================================
+   COORDENADAS
+   ===================================================== */
 
 function coordenadas(casa) {
-
     return {
-        linha: parseInt(casa.dataset.linha),
-        coluna: parseInt(casa.dataset.coluna)
+        linha:
+            parseInt(
+                casa.dataset.linha
+            ),
+
+        coluna:
+            parseInt(
+                casa.dataset.coluna
+            )
     };
 }
 
-/*
-|--------------------------------------------------------------------------
-| PEGAR CASA
-|--------------------------------------------------------------------------
-*/
 
-function pegarCasa(linha, coluna) {
+/* =====================================================
+   PEGAR CASA
+   ===================================================== */
 
+function pegarCasa(
+    linha,
+    coluna
+) {
     if (
         linha < 0 ||
         linha > 7 ||
@@ -256,11 +557,10 @@ function pegarCasa(linha, coluna) {
     );
 }
 
-/*
-|--------------------------------------------------------------------------
-| CAMINHO LIVRE
-|--------------------------------------------------------------------------
-*/
+
+/* =====================================================
+   CAMINHO LIVRE
+   ===================================================== */
 
 function caminhoLivre(
     linhaOrigem,
@@ -268,41 +568,50 @@ function caminhoLivre(
     linhaDestino,
     colunaDestino
 ) {
-
     const passoLinha =
-        Math.sign(linhaDestino - linhaOrigem);
+        Math.sign(
+            linhaDestino -
+            linhaOrigem
+        );
 
     const passoColuna =
-        Math.sign(colunaDestino - colunaOrigem);
+        Math.sign(
+            colunaDestino -
+            colunaOrigem
+        );
 
     let linha =
-        linhaOrigem + passoLinha;
+        linhaOrigem +
+        passoLinha;
 
     let coluna =
-        colunaOrigem + passoColuna;
+        colunaOrigem +
+        passoColuna;
 
     while (
         linha !== linhaDestino ||
         coluna !== colunaDestino
     ) {
-
-        if (obterPeca(linha, coluna)) {
+        if (
+            obterPeca(
+                linha,
+                coluna
+            )
+        ) {
             return false;
         }
 
         linha += passoLinha;
-
         coluna += passoColuna;
     }
 
     return true;
 }
 
-/*
-|--------------------------------------------------------------------------
-| MOVIMENTOS DESLIZANTES
-|--------------------------------------------------------------------------
-*/
+
+/* =====================================================
+   MOVIMENTOS DESLIZANTES
+   ===================================================== */
 
 function movimentosDeslizantes(
     linha,
@@ -310,14 +619,17 @@ function movimentosDeslizantes(
     direcoes,
     cor
 ) {
-
     const movimentos = [];
 
-    for (const [dl, dc] of direcoes) {
+    for (
+        const [dl, dc]
+        of direcoes
+    ) {
+        let novaLinha =
+            linha + dl;
 
-        let novaLinha = linha + dl;
-
-        let novaColuna = coluna + dc;
+        let novaColuna =
+            coluna + dc;
 
         while (
             novaLinha >= 0 &&
@@ -325,24 +637,26 @@ function movimentosDeslizantes(
             novaColuna >= 0 &&
             novaColuna <= 7
         ) {
-
             const pecaDestino =
-                obterPeca(novaLinha, novaColuna);
+                obterPeca(
+                    novaLinha,
+                    novaColuna
+                );
 
             if (!pecaDestino) {
-
                 movimentos.push([
                     novaLinha,
                     novaColuna
                 ]);
-
             } else {
-
                 if (
-                    corDaPeca(pecaDestino) !== cor &&
-                    tipoDaPeca(pecaDestino) !== 'K'
+                    corDaPeca(
+                        pecaDestino
+                    ) !== cor &&
+                    tipoDaPeca(
+                        pecaDestino
+                    ) !== 'K'
                 ) {
-
                     movimentos.push([
                         novaLinha,
                         novaColuna
@@ -353,7 +667,6 @@ function movimentosDeslizantes(
             }
 
             novaLinha += dl;
-
             novaColuna += dc;
         }
     }
@@ -361,54 +674,60 @@ function movimentosDeslizantes(
     return movimentos;
 }
 
-/*
-|--------------------------------------------------------------------------
-| CASA ATACADA
-|--------------------------------------------------------------------------
-*/
+
+/* =====================================================
+   CASA ATACADA
+   ===================================================== */
 
 function casaAtacada(
     linhaAlvo,
     colunaAlvo,
     corAtacante
 ) {
-
-    for (let linha = 0; linha < 8; linha++) {
-
-        for (let coluna = 0; coluna < 8; coluna++) {
-
+    for (
+        let linha = 0;
+        linha < 8;
+        linha++
+    ) {
+        for (
+            let coluna = 0;
+            coluna < 8;
+            coluna++
+        ) {
             const peca =
-                obterPeca(linha, coluna);
+                obterPeca(
+                    linha,
+                    coluna
+                );
 
             if (!peca) {
                 continue;
             }
 
-            if (corDaPeca(peca) !== corAtacante) {
+            if (
+                corDaPeca(peca) !==
+                corAtacante
+            ) {
                 continue;
             }
 
             const tipo =
                 tipoDaPeca(peca);
 
-            /*
-            |--------------------------------------------------------------------------
-            | PEÃO
-            |--------------------------------------------------------------------------
-            */
-
             if (tipo === 'P') {
-
                 const direcao =
                     corAtacante === 'w'
                         ? -1
                         : 1;
 
                 if (
-                    linha + direcao === linhaAlvo &&
+                    linha + direcao ===
+                        linhaAlvo &&
                     (
-                        coluna - 1 === colunaAlvo ||
-                        coluna + 1 === colunaAlvo
+                        coluna - 1 ===
+                            colunaAlvo ||
+                        coluna + 1 ===
+                            colunaAlvo
                     )
                 ) {
                     return true;
@@ -417,14 +736,7 @@ function casaAtacada(
                 continue;
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | CAVALO
-            |--------------------------------------------------------------------------
-            */
-
             if (tipo === 'N') {
-
                 const movimentos = [
                     [-2, -1],
                     [-2, 1],
@@ -436,11 +748,15 @@ function casaAtacada(
                     [2, 1]
                 ];
 
-                for (const [dl, dc] of movimentos) {
-
+                for (
+                    const [dl, dc]
+                    of movimentos
+                ) {
                     if (
-                        linha + dl === linhaAlvo &&
-                        coluna + dc === colunaAlvo
+                        linha + dl ===
+                            linhaAlvo &&
+                        coluna + dc ===
+                            colunaAlvo
                     ) {
                         return true;
                     }
@@ -449,17 +765,16 @@ function casaAtacada(
                 continue;
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | REI
-            |--------------------------------------------------------------------------
-            */
-
             if (tipo === 'K') {
-
                 if (
-                    Math.abs(linha - linhaAlvo) <= 1 &&
-                    Math.abs(coluna - colunaAlvo) <= 1
+                    Math.abs(
+                        linha -
+                        linhaAlvo
+                    ) <= 1 &&
+                    Math.abs(
+                        coluna -
+                        colunaAlvo
+                    ) <= 1
                 ) {
                     return true;
                 }
@@ -467,34 +782,23 @@ function casaAtacada(
                 continue;
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | TORRE / BISPO / RAINHA
-            |--------------------------------------------------------------------------
-            */
-
             let direcoes = [];
 
             if (tipo === 'R') {
-
                 direcoes = [
                     [-1, 0],
                     [1, 0],
                     [0, -1],
                     [0, 1]
                 ];
-
             } else if (tipo === 'B') {
-
                 direcoes = [
                     [-1, -1],
                     [-1, 1],
                     [1, -1],
                     [1, 1]
                 ];
-
             } else if (tipo === 'Q') {
-
                 direcoes = [
                     [-1, 0],
                     [1, 0],
@@ -507,8 +811,10 @@ function casaAtacada(
                 ];
             }
 
-            for (const [dl, dc] of direcoes) {
-
+            for (
+                const [dl, dc]
+                of direcoes
+            ) {
                 let novaLinha =
                     linha + dl;
 
@@ -521,10 +827,11 @@ function casaAtacada(
                     novaColuna >= 0 &&
                     novaColuna <= 7
                 ) {
-
                     if (
-                        novaLinha === linhaAlvo &&
-                        novaColuna === colunaAlvo
+                        novaLinha ===
+                            linhaAlvo &&
+                        novaColuna ===
+                            colunaAlvo
                     ) {
                         return true;
                     }
@@ -539,7 +846,6 @@ function casaAtacada(
                     }
 
                     novaLinha += dl;
-
                     novaColuna += dc;
                 }
             }
@@ -549,27 +855,33 @@ function casaAtacada(
     return false;
 }
 
-/*
-|--------------------------------------------------------------------------
-| ENCONTRAR REI
-|--------------------------------------------------------------------------
-*/
+
+/* =====================================================
+   ENCONTRAR REI
+   ===================================================== */
 
 function encontrarRei(cor) {
-
-    for (let linha = 0; linha < 8; linha++) {
-
-        for (let coluna = 0; coluna < 8; coluna++) {
-
+    for (
+        let linha = 0;
+        linha < 8;
+        linha++
+    ) {
+        for (
+            let coluna = 0;
+            coluna < 8;
+            coluna++
+        ) {
             const peca =
-                obterPeca(linha, coluna);
+                obterPeca(
+                    linha,
+                    coluna
+                );
 
             if (
                 peca &&
                 corDaPeca(peca) === cor &&
                 tipoDaPeca(peca) === 'K'
             ) {
-
                 return {
                     linha,
                     coluna
@@ -581,14 +893,12 @@ function encontrarRei(cor) {
     return null;
 }
 
-/*
-|--------------------------------------------------------------------------
-| ESTÁ EM XEQUE
-|--------------------------------------------------------------------------
-*/
+
+/* =====================================================
+   XEQUE
+   ===================================================== */
 
 function estaEmXeque(cor) {
-
     const rei =
         encontrarRei(cor);
 
@@ -608,18 +918,16 @@ function estaEmXeque(cor) {
     );
 }
 
-/*
-|--------------------------------------------------------------------------
-| ROQUE
-|--------------------------------------------------------------------------
-*/
+
+/* =====================================================
+   ROQUE
+   ===================================================== */
 
 function podeFazerRoque(
     linha,
     coluna,
     destinoColuna
 ) {
-
     const rei =
         obterElementoPeca(
             linha,
@@ -630,14 +938,21 @@ function podeFazerRoque(
         return false;
     }
 
-    if (rei.dataset.movido === 'true') {
+    if (
+        rei.dataset.movido ===
+        'true'
+    ) {
         return false;
     }
 
     const cor =
-        corDaPeca(rei.dataset.peca);
+        corDaPeca(
+            rei.dataset.peca
+        );
 
-    if (estaEmXeque(cor)) {
+    if (
+        estaEmXeque(cor)
+    ) {
         return false;
     }
 
@@ -657,7 +972,10 @@ function podeFazerRoque(
         return false;
     }
 
-    if (torre.dataset.movido === 'true') {
+    if (
+        torre.dataset.movido ===
+        'true'
+    ) {
         return false;
     }
 
@@ -678,8 +996,12 @@ function podeFazerRoque(
         c < fim;
         c++
     ) {
-
-        if (obterPeca(linha, c)) {
+        if (
+            obterPeca(
+                linha,
+                c
+            )
+        ) {
             return false;
         }
     }
@@ -718,19 +1040,20 @@ function podeFazerRoque(
     return true;
 }
 
-/*
-|--------------------------------------------------------------------------
-| MOVIMENTOS BRUTOS
-|--------------------------------------------------------------------------
-*/
+
+/* =====================================================
+   MOVIMENTOS BRUTOS
+   ===================================================== */
 
 function obterMovimentosBrutos(
     linha,
     coluna
 ) {
-
     const peca =
-        obterPeca(linha, coluna);
+        obterPeca(
+            linha,
+            coluna
+        );
 
     if (!peca) {
         return [];
@@ -744,14 +1067,10 @@ function obterMovimentosBrutos(
 
     const movimentos = [];
 
-    /*
-    |--------------------------------------------------------------------------
-    | PEÃO
-    |--------------------------------------------------------------------------
-    */
+
+    /* PEÃO */
 
     if (tipo === 'P') {
-
         const direcao =
             cor === 'w'
                 ? -1
@@ -765,12 +1084,6 @@ function obterMovimentosBrutos(
         const proximaLinha =
             linha + direcao;
 
-        /*
-        |--------------------------------------------------------------------------
-        | UMA CASA
-        |--------------------------------------------------------------------------
-        */
-
         if (
             proximaLinha >= 0 &&
             proximaLinha <= 7 &&
@@ -779,20 +1092,14 @@ function obterMovimentosBrutos(
                 coluna
             )
         ) {
-
             movimentos.push([
                 proximaLinha,
                 coluna
             ]);
 
-            /*
-            |--------------------------------------------------------------------------
-            | DUAS CASAS
-            |--------------------------------------------------------------------------
-            */
-
             const segundaLinha =
-                linha + direcao * 2;
+                linha +
+                direcao * 2;
 
             if (
                 linha === linhaInicial &&
@@ -801,7 +1108,6 @@ function obterMovimentosBrutos(
                     coluna
                 )
             ) {
-
                 movimentos.push([
                     segundaLinha,
                     coluna
@@ -809,14 +1115,9 @@ function obterMovimentosBrutos(
             }
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | CAPTURA NORMAL
-        |--------------------------------------------------------------------------
-        */
-
-        for (const dc of [-1, 1]) {
-
+        for (
+            const dc of [-1, 1]
+        ) {
             const novaColuna =
                 coluna + dc;
 
@@ -837,10 +1138,13 @@ function obterMovimentosBrutos(
 
             if (
                 pecaDestino &&
-                corDaPeca(pecaDestino) !== cor &&
-                tipoDaPeca(pecaDestino) !== 'K'
+                corDaPeca(
+                    pecaDestino
+                ) !== cor &&
+                tipoDaPeca(
+                    pecaDestino
+                ) !== 'K'
             ) {
-
                 movimentos.push([
                     proximaLinha,
                     novaColuna
@@ -848,14 +1152,10 @@ function obterMovimentosBrutos(
             }
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | EN PASSANT
-        |--------------------------------------------------------------------------
-        */
+
+        /* EN PASSANT */
 
         if (ultimoMovimento) {
-
             const origemUltimo =
                 ultimoMovimento.origem;
 
@@ -867,52 +1167,40 @@ function obterMovimentosBrutos(
 
             if (
                 pecaUltimo &&
-                tipoDaPeca(pecaUltimo) === 'P' &&
-                corDaPeca(pecaUltimo) !== cor &&
+                tipoDaPeca(
+                    pecaUltimo
+                ) === 'P' &&
+                corDaPeca(
+                    pecaUltimo
+                ) !== cor &&
                 Math.abs(
                     destinoUltimo.linha -
                     origemUltimo.linha
                 ) === 2 &&
-                destinoUltimo.linha === linha &&
+                destinoUltimo.linha ===
+                    linha &&
                 Math.abs(
                     destinoUltimo.coluna -
                     coluna
                 ) === 1
             ) {
-
-                const linhaDestino =
-                    linha + direcao;
-
-                const casaDestinoEnPassant =
+                const casaDestino =
                     pegarCasa(
-                        linhaDestino,
+                        linha + direcao,
                         destinoUltimo.coluna
                     );
 
                 if (
-                    casaDestinoEnPassant &&
+                    casaDestino &&
                     !obterPeca(
-                        linhaDestino,
+                        linha + direcao,
                         destinoUltimo.coluna
                     )
                 ) {
-
-                    const peaoAdjacente =
-                        obterPeca(
-                            linha,
-                            destinoUltimo.coluna
-                        );
-
-                    if (
-                        peaoAdjacente &&
-                        tipoDaPeca(peaoAdjacente) === 'P'
-                    ) {
-
-                        movimentos.push([
-                            linhaDestino,
-                            destinoUltimo.coluna
-                        ]);
-                    }
+                    movimentos.push([
+                        linha + direcao,
+                        destinoUltimo.coluna
+                    ]);
                 }
             }
         }
@@ -920,14 +1208,10 @@ function obterMovimentosBrutos(
         return movimentos;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | CAVALO
-    |--------------------------------------------------------------------------
-    */
+
+    /* CAVALO */
 
     if (tipo === 'N') {
-
         const movimentosCavalo = [
             [-2, -1],
             [-2, 1],
@@ -939,8 +1223,10 @@ function obterMovimentosBrutos(
             [2, 1]
         ];
 
-        for (const [dl, dc] of movimentosCavalo) {
-
+        for (
+            const [dl, dc]
+            of movimentosCavalo
+        ) {
             const novaLinha =
                 linha + dl;
 
@@ -969,7 +1255,6 @@ function obterMovimentosBrutos(
                     tipoDaPeca(destino) !== 'K'
                 )
             ) {
-
                 movimentos.push([
                     novaLinha,
                     novaColuna
@@ -980,14 +1265,10 @@ function obterMovimentosBrutos(
         return movimentos;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | BISPO
-    |--------------------------------------------------------------------------
-    */
+
+    /* BISPO */
 
     if (tipo === 'B') {
-
         return movimentosDeslizantes(
             linha,
             coluna,
@@ -1001,14 +1282,10 @@ function obterMovimentosBrutos(
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | TORRE
-    |--------------------------------------------------------------------------
-    */
+
+    /* TORRE */
 
     if (tipo === 'R') {
-
         return movimentosDeslizantes(
             linha,
             coluna,
@@ -1022,14 +1299,10 @@ function obterMovimentosBrutos(
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | RAINHA
-    |--------------------------------------------------------------------------
-    */
+
+    /* RAINHA */
 
     if (tipo === 'Q') {
-
         return movimentosDeslizantes(
             linha,
             coluna,
@@ -1047,14 +1320,10 @@ function obterMovimentosBrutos(
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | REI
-    |--------------------------------------------------------------------------
-    */
+
+    /* REI */
 
     if (tipo === 'K') {
-
         const movimentosRei = [
             [-1, -1],
             [-1, 0],
@@ -1066,8 +1335,10 @@ function obterMovimentosBrutos(
             [1, 1]
         ];
 
-        for (const [dl, dc] of movimentosRei) {
-
+        for (
+            const [dl, dc]
+            of movimentosRei
+        ) {
             const novaLinha =
                 linha + dl;
 
@@ -1096,19 +1367,12 @@ function obterMovimentosBrutos(
                     tipoDaPeca(destino) !== 'K'
                 )
             ) {
-
                 movimentos.push([
                     novaLinha,
                     novaColuna
                 ]);
             }
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | ROQUE
-        |--------------------------------------------------------------------------
-        */
 
         if (
             podeFazerRoque(
@@ -1117,7 +1381,6 @@ function obterMovimentosBrutos(
                 coluna + 2
             )
         ) {
-
             movimentos.push([
                 linha,
                 coluna + 2
@@ -1131,7 +1394,6 @@ function obterMovimentosBrutos(
                 coluna - 2
             )
         ) {
-
             movimentos.push([
                 linha,
                 coluna - 2
@@ -1144,17 +1406,15 @@ function obterMovimentosBrutos(
     return movimentos;
 }
 
-/*
-|--------------------------------------------------------------------------
-| SIMULAR MOVIMENTO
-|--------------------------------------------------------------------------
-*/
+
+/* =====================================================
+   SIMULAR MOVIMENTO
+   ===================================================== */
 
 function simularMovimento(
     origem,
     destino
 ) {
-
     const pecaOrigem =
         obterElementoPeca(
             origem.linha,
@@ -1182,34 +1442,36 @@ function simularMovimento(
     }
 
     const pecaCapturada =
-        casaDestino.querySelector('.peca');
+        casaDestino.querySelector(
+            '.peca'
+        );
 
-    let pecaCapturadaEnPassant = null;
+    let pecaCapturadaEnPassant =
+        null;
 
-    let casaCapturadaEnPassant = null;
-
-    /*
-    |--------------------------------------------------------------------------
-    | EN PASSANT NA SIMULAÇÃO
-    |--------------------------------------------------------------------------
-    */
+    let casaCapturadaEnPassant =
+        null;
 
     if (
-        tipoDaPeca(pecaOrigem.dataset.peca) === 'P' &&
-        origem.coluna !== destino.coluna &&
+        tipoDaPeca(
+            pecaOrigem.dataset.peca
+        ) === 'P' &&
+        origem.coluna !==
+            destino.coluna &&
         !pecaCapturada
     ) {
-
         casaCapturadaEnPassant =
             pegarCasa(
                 origem.linha,
                 destino.coluna
             );
 
-        if (casaCapturadaEnPassant) {
-
+        if (
+            casaCapturadaEnPassant
+        ) {
             const possivelPeao =
-                casaCapturadaEnPassant.querySelector('.peca');
+                casaCapturadaEnPassant
+                    .querySelector('.peca');
 
             if (
                 possivelPeao &&
@@ -1217,35 +1479,22 @@ function simularMovimento(
                     possivelPeao.dataset.peca
                 ) === 'P'
             ) {
-
                 pecaCapturadaEnPassant =
                     possivelPeao;
 
-                casaCapturadaEnPassant.removeChild(
-                    pecaCapturadaEnPassant
-                );
+                casaCapturadaEnPassant
+                    .removeChild(
+                        pecaCapturadaEnPassant
+                    );
             }
         }
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | REMOVER CAPTURA NORMAL
-    |--------------------------------------------------------------------------
-    */
-
     if (pecaCapturada) {
-
         casaDestino.removeChild(
             pecaCapturada
         );
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | MOVER
-    |--------------------------------------------------------------------------
-    */
 
     casaDestino.appendChild(
         pecaOrigem
@@ -1261,14 +1510,14 @@ function simularMovimento(
     };
 }
 
-/*
-|--------------------------------------------------------------------------
-| DESFAZER SIMULAÇÃO
-|--------------------------------------------------------------------------
-*/
 
-function desfazerMovimento(simulacao) {
+/* =====================================================
+   DESFAZER SIMULAÇÃO
+   ===================================================== */
 
+function desfazerMovimento(
+    simulacao
+) {
     if (!simulacao) {
         return;
     }
@@ -1287,7 +1536,6 @@ function desfazerMovimento(simulacao) {
     );
 
     if (pecaCapturada) {
-
         casaDestino.appendChild(
             pecaCapturada
         );
@@ -1297,26 +1545,26 @@ function desfazerMovimento(simulacao) {
         pecaCapturadaEnPassant &&
         casaCapturadaEnPassant
     ) {
-
         casaCapturadaEnPassant.appendChild(
             pecaCapturadaEnPassant
         );
     }
 }
 
-/*
-|--------------------------------------------------------------------------
-| MOVIMENTOS LEGAIS
-|--------------------------------------------------------------------------
-*/
+
+/* =====================================================
+   MOVIMENTOS LEGAIS
+   ===================================================== */
 
 function movimentosLegais(
     linha,
     coluna
 ) {
-
     const peca =
-        obterPeca(linha, coluna);
+        obterPeca(
+            linha,
+            coluna
+        );
 
     if (!peca) {
         return [];
@@ -1334,23 +1582,19 @@ function movimentosLegais(
     const movimentosLegais = [];
 
     for (
-        const [destinoLinha, destinoColuna]
+        const [
+            destinoLinha,
+            destinoColuna
+        ]
         of movimentosBrutos
     ) {
-
-        /*
-        |--------------------------------------------------------------------------
-        | ROQUE
-        |--------------------------------------------------------------------------
-        */
-
         if (
             tipoDaPeca(peca) === 'K' &&
             Math.abs(
-                destinoColuna - coluna
+                destinoColuna -
+                coluna
             ) === 2
         ) {
-
             movimentosLegais.push([
                 destinoLinha,
                 destinoColuna
@@ -1366,8 +1610,11 @@ function movimentosLegais(
                     coluna
                 },
                 {
-                    linha: destinoLinha,
-                    coluna: destinoColuna
+                    linha:
+                        destinoLinha,
+
+                    coluna:
+                        destinoColuna
                 }
             );
 
@@ -1378,10 +1625,11 @@ function movimentosLegais(
         const emXeque =
             estaEmXeque(cor);
 
-        desfazerMovimento(simulacao);
+        desfazerMovimento(
+            simulacao
+        );
 
         if (!emXeque) {
-
             movimentosLegais.push([
                 destinoLinha,
                 destinoColuna
@@ -1392,17 +1640,15 @@ function movimentosLegais(
     return movimentosLegais;
 }
 
-/*
-|--------------------------------------------------------------------------
-| MOSTRAR MOVIMENTOS
-|--------------------------------------------------------------------------
-*/
+
+/* =====================================================
+   MOSTRAR MOVIMENTOS
+   ===================================================== */
 
 function mostrarMovimentos(
     linha,
     coluna
 ) {
-
     const movimentos =
         movimentosLegais(
             linha,
@@ -1423,8 +1669,10 @@ function mostrarMovimentos(
         'selecionada'
     );
 
-    for (const [l, c] of movimentos) {
-
+    for (
+        const [l, c]
+        of movimentos
+    ) {
         const casa =
             pegarCasa(l, c);
 
@@ -1436,22 +1684,25 @@ function mostrarMovimentos(
             'movimento'
         );
 
-        if (obterPeca(l, c)) {
-
+        if (
+            obterPeca(l, c)
+        ) {
             casa.classList.add(
                 'captura'
             );
         }
 
         const pecaOrigem =
-            obterPeca(linha, coluna);
+            obterPeca(
+                linha,
+                coluna
+            );
 
         if (
             tipoDaPeca(pecaOrigem) === 'P' &&
             coluna !== c &&
             !obterPeca(l, c)
         ) {
-
             casa.classList.add(
                 'captura'
             );
@@ -1459,26 +1710,35 @@ function mostrarMovimentos(
     }
 }
 
-/*
-|--------------------------------------------------------------------------
-| EXISTEM MOVIMENTOS
-|--------------------------------------------------------------------------
-*/
+
+/* =====================================================
+   EXISTEM MOVIMENTOS
+   ===================================================== */
 
 function existemMovimentos(cor) {
-
-    for (let linha = 0; linha < 8; linha++) {
-
-        for (let coluna = 0; coluna < 8; coluna++) {
-
+    for (
+        let linha = 0;
+        linha < 8;
+        linha++
+    ) {
+        for (
+            let coluna = 0;
+            coluna < 8;
+            coluna++
+        ) {
             const peca =
-                obterPeca(linha, coluna);
+                obterPeca(
+                    linha,
+                    coluna
+                );
 
             if (!peca) {
                 continue;
             }
 
-            if (corDaPeca(peca) !== cor) {
+            if (
+                corDaPeca(peca) !== cor
+            ) {
                 continue;
             }
 
@@ -1496,32 +1756,30 @@ function existemMovimentos(cor) {
     return false;
 }
 
-/*
-|--------------------------------------------------------------------------
-| ATUALIZAR XEQUE
-|--------------------------------------------------------------------------
-*/
+
+/* =====================================================
+   ATUALIZAR XEQUE
+   ===================================================== */
 
 function atualizarXeque() {
-
     document
         .querySelectorAll('.casa')
         .forEach(casa => {
-
             casa.classList.remove(
                 'xeque'
             );
         });
 
-    for (const cor of ['w', 'b']) {
-
-        if (estaEmXeque(cor)) {
-
+    for (
+        const cor of ['w', 'b']
+    ) {
+        if (
+            estaEmXeque(cor)
+        ) {
             const rei =
                 encontrarRei(cor);
 
             if (rei) {
-
                 const casaRei =
                     pegarCasa(
                         rei.linha,
@@ -1529,7 +1787,6 @@ function atualizarXeque() {
                     );
 
                 if (casaRei) {
-
                     casaRei.classList.add(
                         'xeque'
                     );
@@ -1539,359 +1796,296 @@ function atualizarXeque() {
     }
 }
 
-/*
-|--------------------------------------------------------------------------
-| VERIFICAR FIM DE JOGO
-|--------------------------------------------------------------------------
-*/
+
+/* =====================================================
+   NOME DA PEÇA
+   ===================================================== */
+
+function nomePeca(
+    tipo
+) {
+    const nomes = {
+        P: '',
+        N: 'C',
+        B: 'B',
+        R: 'T',
+        Q: 'D',
+        K: 'R'
+    };
+
+    return nomes[tipo] || '';
+}
+
+
+/* =====================================================
+   CASA PARA ALGÉBRICA
+   ===================================================== */
+
+function casaAlgebrica(
+    linha,
+    coluna
+) {
+    const letras =
+        'abcdefgh';
+
+    return (
+        letras[coluna] +
+        (8 - linha)
+    );
+}
+
+
+/* =====================================================
+   REGISTRAR MOVIMENTO
+   ===================================================== */
+
+function registrarMovimento(
+    origem,
+    destino,
+    peca,
+    captura,
+    roque,
+    promocao
+) {
+    const tipo =
+        tipoDaPeca(peca);
+
+    let anotacao = '';
+
+    if (roque) {
+        if (
+            destino.coluna >
+            origem.coluna
+        ) {
+            anotacao = 'O-O';
+        } else {
+            anotacao = 'O-O-O';
+        }
+    } else {
+        const nome =
+            nomePeca(tipo);
+
+        if (tipo === 'P') {
+            if (captura) {
+                anotacao =
+                    casaAlgebrica(
+                        origem.linha,
+                        origem.coluna
+                    )[0] +
+                    'x';
+            }
+        } else {
+            anotacao = nome;
+
+            if (captura) {
+                anotacao += 'x';
+            }
+        }
+
+        anotacao +=
+            casaAlgebrica(
+                destino.linha,
+                destino.coluna
+            );
+
+        if (promocao) {
+            anotacao +=
+                '=' +
+                nomePeca(
+                    promocao
+                );
+        }
+    }
+
+    historicoMovimentos.push({
+        cor:
+            corDaPeca(peca),
+
+        anotacao
+    });
+
+    atualizarHistorico();
+}
+
+
+/* =====================================================
+   ATUALIZAR HISTÓRICO
+   ===================================================== */
+
+function atualizarHistorico() {
+    const lista =
+        document.querySelector(
+            '.lista-historico'
+        );
+
+    if (!lista) {
+        return;
+    }
+
+    lista.innerHTML = '';
+
+    for (
+        let i = 0;
+        i < historicoMovimentos.length;
+        i += 2
+    ) {
+        const linha =
+            document.createElement(
+                'div'
+            );
+
+        linha.className =
+            'linha-historico';
+
+        const numero =
+            document.createElement(
+                'div'
+            );
+
+        numero.className =
+            'numero-movimento';
+
+        numero.textContent =
+            (i / 2 + 1) + '.';
+
+        const branco =
+            document.createElement(
+                'div'
+            );
+
+        branco.className =
+            'movimento-branco';
+
+        branco.textContent =
+            historicoMovimentos[i]
+                ?.anotacao || '';
+
+        const preto =
+            document.createElement(
+                'div'
+            );
+
+        preto.className =
+            'movimento-preto';
+
+        preto.textContent =
+            historicoMovimentos[i + 1]
+                ?.anotacao || '';
+
+        linha.appendChild(numero);
+        linha.appendChild(branco);
+        linha.appendChild(preto);
+
+        lista.appendChild(linha);
+    }
+
+    lista.scrollTop =
+        lista.scrollHeight;
+}
+
+
+/* =====================================================
+   ÚLTIMO MOVIMENTO VISUAL
+   ===================================================== */
+
+function atualizarUltimoMovimentoVisual() {
+    document
+        .querySelectorAll('.ultimo-movimento')
+        .forEach(casa => {
+            casa.classList.remove(
+                'ultimo-movimento'
+            );
+        });
+
+    if (!ultimoMovimento) {
+        return;
+    }
+
+    const origem =
+        pegarCasa(
+            ultimoMovimento.origem.linha,
+            ultimoMovimento.origem.coluna
+        );
+
+    const destino =
+        pegarCasa(
+            ultimoMovimento.destino.linha,
+            ultimoMovimento.destino.coluna
+        );
+
+    if (origem) {
+        origem.classList.add(
+            'ultimo-movimento'
+        );
+    }
+
+    if (destino) {
+        destino.classList.add(
+            'ultimo-movimento'
+        );
+    }
+}
+
+
+/* =====================================================
+   VERIFICAR FIM DE JOGO
+   ===================================================== */
 
 function verificarFimDeJogo() {
-
-    if (existemMovimentos(turno)) {
+    if (
+        existemMovimentos(turno)
+    ) {
         return;
     }
 
     jogoEncerrado = true;
 
-    if (estaEmXeque(turno)) {
-
+    if (
+        estaEmXeque(turno)
+    ) {
         const vencedor =
             turno === 'w'
                 ? 'Pretas'
                 : 'Brancas';
 
-        alert(
-            `Xeque-mate! ${vencedor} venceu.`
-        );
+        const perdedor =
+            turno === 'w'
+                ? 'Brancas'
+                : 'Pretas';
 
+        if (
+            historicoMovimentos.length > 0
+        ) {
+            historicoMovimentos[
+                historicoMovimentos.length - 1
+            ].anotacao += '#';
+
+            atualizarHistorico();
+        }
+
+        mostrarFimDeJogo(
+            'Xeque-mate!',
+            vencedor +
+            ' venceram a partida.'
+        );
     } else {
-
-        alert(
-            'Empate por afogamento!'
+        mostrarFimDeJogo(
+            'Empate!',
+            'A partida terminou por afogamento.'
         );
     }
 }
 
-/*
-|--------------------------------------------------------------------------
-| NOTAÇÃO ALGÉBRICA
-|--------------------------------------------------------------------------
-*/
 
-function colunaParaLetra(coluna) {
-
-    return String.fromCharCode(
-        97 + coluna
-    );
-}
-
-function casaParaAlgebraica(
-    linha,
-    coluna
-) {
-
-    return (
-        colunaParaLetra(coluna) +
-        (8 - linha)
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| SÍMBOLO DA PEÇA
-|--------------------------------------------------------------------------
-*/
-
-function simboloPeca(tipo) {
-
-    const simbolos = {
-        K: 'K',
-        Q: 'Q',
-        R: 'R',
-        B: 'B',
-        N: 'N'
-    };
-
-    return simbolos[tipo] || '';
-}
-
-/*
-|--------------------------------------------------------------------------
-| VERIFICAR AMBIGUIDADE
-|--------------------------------------------------------------------------
-*/
-
-function obterDesambiguacao(
-    origem,
-    destino,
-    tipo,
-    cor
-) {
-
-    if (tipo === 'P' || tipo === 'K') {
-        return '';
-    }
-
-    const candidatos = [];
-
-    for (let linha = 0; linha < 8; linha++) {
-
-        for (let coluna = 0; coluna < 8; coluna++) {
-
-            if (
-                linha === origem.linha &&
-                coluna === origem.coluna
-            ) {
-                continue;
-            }
-
-            const peca =
-                obterPeca(linha, coluna);
-
-            if (!peca) {
-                continue;
-            }
-
-            if (corDaPeca(peca) !== cor) {
-                continue;
-            }
-
-            if (tipoDaPeca(peca) !== tipo) {
-                continue;
-            }
-
-            const movimentos =
-                movimentosLegais(
-                    linha,
-                    coluna
-                );
-
-            const consegueMover =
-                movimentos.some(
-                    ([l, c]) =>
-                        l === destino.linha &&
-                        c === destino.coluna
-                );
-
-            if (consegueMover) {
-
-                candidatos.push({
-                    linha,
-                    coluna
-                });
-            }
-        }
-    }
-
-    if (candidatos.length === 0) {
-        return '';
-    }
-
-    const mesmaColuna =
-        candidatos.some(
-            candidato =>
-                candidato.coluna === origem.coluna
-        );
-
-    const mesmaLinha =
-        candidatos.some(
-            candidato =>
-                candidato.linha === origem.linha
-        );
-
-    if (!mesmaColuna) {
-
-        return colunaParaLetra(
-            origem.coluna
-        );
-    }
-
-    if (!mesmaLinha) {
-
-        return String(
-            8 - origem.linha
-        );
-    }
-
-    return (
-        colunaParaLetra(origem.coluna) +
-        (8 - origem.linha)
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| CRIAR NOTAÇÃO DO MOVIMENTO
-|--------------------------------------------------------------------------
-*/
-
-function criarNotacaoMovimento(
-    origem,
-    destino,
-    nomePeca,
-    captura,
-    promocao = null,
-    enPassant = false
-) {
-
-    const tipo =
-        tipoDaPeca(nomePeca);
-
-    const cor =
-        corDaPeca(nomePeca);
-
-    /*
-    |--------------------------------------------------------------------------
-    | ROQUE
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-        tipo === 'K' &&
-        Math.abs(
-            destino.coluna -
-            origem.coluna
-        ) === 2
-    ) {
-
-        if (destino.coluna > origem.coluna) {
-            return 'O-O';
-        }
-
-        return 'O-O-O';
-    }
-
-    const destinoAlgebraico =
-        casaParaAlgebraica(
-            destino.linha,
-            destino.coluna
-        );
-
-    let notacao = '';
-
-    /*
-    |--------------------------------------------------------------------------
-    | PEÃO
-    |--------------------------------------------------------------------------
-    */
-
-    if (tipo === 'P') {
-
-        if (captura) {
-
-            notacao +=
-                colunaParaLetra(
-                    origem.coluna
-                );
-
-            notacao += 'x';
-        }
-
-        notacao += destinoAlgebraico;
-
-    } else {
-
-        /*
-        |--------------------------------------------------------------------------
-        | PEÇAS
-        |--------------------------------------------------------------------------
-        */
-
-        notacao +=
-            simboloPeca(tipo);
-
-        notacao +=
-            obterDesambiguacao(
-                origem,
-                destino,
-                tipo,
-                cor
-            );
-
-        if (captura) {
-            notacao += 'x';
-        }
-
-        notacao += destinoAlgebraico;
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | PROMOÇÃO
-    |--------------------------------------------------------------------------
-    */
-
-    if (promocao) {
-
-        notacao +=
-            '=' +
-            simboloPeca(promocao);
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | EN PASSANT
-    |--------------------------------------------------------------------------
-    */
-
-    if (enPassant) {
-
-        notacao += ' e.p.';
-    }
-
-    return notacao;
-}
-
-/*
-|--------------------------------------------------------------------------
-| FINALIZAR NOTAÇÃO COM XEQUE / MATE
-|--------------------------------------------------------------------------
-*/
-
-function finalizarNotacao(
-    notacao
-) {
-
-    if (estaEmXeque(turno)) {
-
-        if (!existemMovimentos(turno)) {
-
-            return notacao + '#';
-        }
-
-        return notacao + '+';
-    }
-
-    return notacao;
-}
-
-/*
-|--------------------------------------------------------------------------
-| ADICIONAR AO HISTÓRICO
-|--------------------------------------------------------------------------
-*/
-
-function adicionarAoHistorico(
-    notacao
-) {
-
-    historicoMovimentos.push(
-        notacao
-    );
-
-    atualizarHistorico();
-}
-
-/*
-|--------------------------------------------------------------------------
-| PROMOÇÃO
-|--------------------------------------------------------------------------
-*/
+/* =====================================================
+   PROMOÇÃO
+   ===================================================== */
 
 function abrirPromocao(casa) {
-
     const peca =
-        casa.querySelector('.peca');
+        casa.querySelector(
+            '.peca'
+        );
 
     if (!peca) {
         return;
@@ -1916,9 +2110,11 @@ function abrirPromocao(casa) {
         return;
     }
 
-    promocaoPendente = casa;
+    promocaoPendente =
+        casa;
 
-    opcoesPromocao.innerHTML = '';
+    opcoesPromocao.innerHTML =
+        '';
 
     const cor =
         corDaPeca(
@@ -1932,25 +2128,32 @@ function abrirPromocao(casa) {
         'N'
     ];
 
-    for (const tipoPromocao of opcoes) {
-
+    for (
+        const tipoPromocao
+        of opcoes
+    ) {
         const botao =
-            document.createElement('button');
+            document.createElement(
+                'button'
+            );
 
         botao.className =
             'opcao-promocao';
 
         const imagem =
-            document.createElement('img');
+            document.createElement(
+                'img'
+            );
 
-        const nomePeca =
-            cor + tipoPromocao;
+        const nome =
+            cor +
+            tipoPromocao;
 
         imagem.src =
-            `${baseUrl}img/pecas/${nomePeca}.svg`;
+            `${baseUrl}img/pecas/${nome}.svg`;
 
         imagem.alt =
-            nomePeca;
+            nome;
 
         botao.appendChild(
             imagem
@@ -1959,7 +2162,6 @@ function abrirPromocao(casa) {
         botao.addEventListener(
             'click',
             () => {
-
                 escolherPromocao(
                     tipoPromocao
                 );
@@ -1976,14 +2178,14 @@ function abrirPromocao(casa) {
     );
 }
 
-/*
-|--------------------------------------------------------------------------
-| ESCOLHER PROMOÇÃO
-|--------------------------------------------------------------------------
-*/
 
-function escolherPromocao(tipo) {
+/* =====================================================
+   ESCOLHER PROMOÇÃO
+   ===================================================== */
 
+function escolherPromocao(
+    tipo
+) {
     if (!promocaoPendente) {
         return;
     }
@@ -1992,12 +2194,12 @@ function escolherPromocao(tipo) {
         promocaoPendente;
 
     const peca =
-        casa.querySelector('.peca');
+        casa.querySelector(
+            '.peca'
+        );
 
     if (!peca) {
-
         fecharPromocao();
-
         return;
     }
 
@@ -2006,103 +2208,100 @@ function escolherPromocao(tipo) {
             peca.dataset.peca
         );
 
-    const nomePeca =
+    const nome =
         cor + tipo;
 
     peca.dataset.peca =
-        nomePeca;
+        nome;
 
     peca.src =
-        `${baseUrl}img/pecas/${nomePeca}.svg`;
+        `${baseUrl}img/pecas/${nome}.svg`;
 
     peca.dataset.movido =
         'true';
 
-    /*
-    |--------------------------------------------------------------------------
-    | FINALIZAR NOTAÇÃO DA PROMOÇÃO
-    |--------------------------------------------------------------------------
-    */
-
-    if (movimentoPromocaoPendente) {
-
-        const movimento =
-            movimentoPromocaoPendente;
-
-        let notacao =
-            criarNotacaoMovimento(
-                movimento.origem,
-                movimento.destino,
-                movimento.peca,
-                movimento.captura,
-                tipo,
-                movimento.enPassant
-            );
-
-        turno =
-            turno === 'w'
-                ? 'b'
-                : 'w';
-
-        atualizarXeque();
-
-        notacao =
-            finalizarNotacao(
-                notacao
-            );
-
-        adicionarAoHistorico(
-            notacao
-        );
-
-        movimentoPromocaoPendente =
-            null;
-
-    } else {
-
-        turno =
-            turno === 'w'
-                ? 'b'
-                : 'w';
-
-        atualizarXeque();
+    if (
+        historicoMovimentos.length > 0
+    ) {
+        historicoMovimentos[
+            historicoMovimentos.length - 1
+        ].anotacao +=
+            '=' +
+            nomePeca(tipo);
     }
 
     fecharPromocao();
 
+    turno =
+        turno === 'w'
+            ? 'b'
+            : 'w';
+
+    atualizarXeque();
+
+    adicionarIndicadorXeque();
+
+    atualizarTurno();
+
+    atualizarHistorico();
+
     verificarFimDeJogo();
 
     limparSelecao();
+
+    atualizarUltimoMovimentoVisual();
 }
 
-/*
-|--------------------------------------------------------------------------
-| FECHAR PROMOÇÃO
-|--------------------------------------------------------------------------
-*/
+
+/* =====================================================
+   INDICADOR DE XEQUE
+   ===================================================== */
+
+function adicionarIndicadorXeque() {
+    const cor =
+        turno;
+
+    if (
+        estaEmXeque(cor)
+    ) {
+        if (
+            historicoMovimentos.length > 0
+        ) {
+            historicoMovimentos[
+                historicoMovimentos.length - 1
+            ].anotacao += '+';
+
+            atualizarHistorico();
+        }
+    }
+}
+
+
+/* =====================================================
+   FECHAR PROMOÇÃO
+   ===================================================== */
 
 function fecharPromocao() {
-
     promocaoOverlay.classList.remove(
         'ativa'
     );
 
-    opcoesPromocao.innerHTML = '';
+    opcoesPromocao.innerHTML =
+        '';
 
-    promocaoPendente = null;
+    promocaoPendente =
+        null;
 }
 
-/*
-|--------------------------------------------------------------------------
-| MOVER PEÇA
-|--------------------------------------------------------------------------
-*/
+
+/* =====================================================
+   MOVER PEÇA
+   ===================================================== */
 
 function moverPeca(
     origem,
     destino
 ) {
-
     const peca =
         obterElementoPeca(
             origem.linha,
@@ -2129,31 +2328,28 @@ function moverPeca(
         return false;
     }
 
-    const nomePeca =
+    salvarEstado();
+
+    const nome =
         peca.dataset.peca;
 
     const tipo =
-        tipoDaPeca(nomePeca);
+        tipoDaPeca(nome);
 
-    /*
-    |--------------------------------------------------------------------------
-    | CAPTURA NORMAL
-    |--------------------------------------------------------------------------
-    */
+    let capturaEnPassant =
+        false;
 
-    const pecaCapturada =
-        casaDestino.querySelector('.peca');
+    let captura =
+        false;
 
-    const captura =
-        !!pecaCapturada;
+    let roque =
+        false;
 
-    /*
-    |--------------------------------------------------------------------------
-    | EN PASSANT
-    |--------------------------------------------------------------------------
-    */
+    let promocao =
+        null;
 
-    let capturaEnPassant = false;
+
+    /* EN PASSANT */
 
     if (
         tipo === 'P' &&
@@ -2163,7 +2359,6 @@ function moverPeca(
             destino.coluna
         )
     ) {
-
         const casaPeao =
             pegarCasa(
                 origem.linha,
@@ -2171,9 +2366,10 @@ function moverPeca(
             );
 
         if (casaPeao) {
-
             const peaoCapturado =
-                casaPeao.querySelector('.peca');
+                casaPeao.querySelector(
+                    '.peca'
+                );
 
             if (
                 peaoCapturado &&
@@ -2182,36 +2378,41 @@ function moverPeca(
                 ) === 'P' &&
                 corDaPeca(
                     peaoCapturado.dataset.peca
-                ) !== corDaPeca(nomePeca)
+                ) !==
+                    corDaPeca(nome)
             ) {
-
                 casaPeao.removeChild(
                     peaoCapturado
                 );
 
-                capturaEnPassant = true;
+                capturaEnPassant =
+                    true;
+
+                captura =
+                    true;
             }
         }
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | REMOVER CAPTURA NORMAL
-    |--------------------------------------------------------------------------
-    */
+
+    /* CAPTURA NORMAL */
+
+    const pecaCapturada =
+        casaDestino.querySelector(
+            '.peca'
+        );
 
     if (pecaCapturada) {
-
         casaDestino.removeChild(
             pecaCapturada
         );
+
+        captura =
+            true;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | MOVIMENTAR PEÇA
-    |--------------------------------------------------------------------------
-    */
+
+    /* MOVER */
 
     casaDestino.appendChild(
         peca
@@ -2220,20 +2421,17 @@ function moverPeca(
     peca.dataset.movido =
         'true';
 
-    /*
-    |--------------------------------------------------------------------------
-    | ROQUE
-    |--------------------------------------------------------------------------
-    */
 
-    const ehRoque =
+    /* ROQUE */
+
+    if (
         tipo === 'K' &&
         Math.abs(
             destino.coluna -
             origem.coluna
-        ) === 2;
-
-    if (ehRoque) {
+        ) === 2
+    ) {
+        roque = true;
 
         fazerRoque(
             origem,
@@ -2241,34 +2439,45 @@ function moverPeca(
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | SALVAR ÚLTIMO MOVIMENTO
-    |--------------------------------------------------------------------------
-    */
+
+    /* ÚLTIMO MOVIMENTO */
 
     ultimoMovimento = {
-
         origem: {
-            linha: origem.linha,
-            coluna: origem.coluna
+            linha:
+                origem.linha,
+
+            coluna:
+                origem.coluna
         },
 
         destino: {
-            linha: destino.linha,
-            coluna: destino.coluna
+            linha:
+                destino.linha,
+
+            coluna:
+                destino.coluna
         },
 
-        peca: nomePeca,
+        peca: nome,
 
         capturaEnPassant
     };
 
-    /*
-    |--------------------------------------------------------------------------
-    | PROMOÇÃO
-    |--------------------------------------------------------------------------
-    */
+
+    /* HISTÓRICO */
+
+    registrarMovimento(
+        origem,
+        destino,
+        nome,
+        captura,
+        roque,
+        promocao
+    );
+
+
+    /* PROMOÇÃO */
 
     if (
         tipo === 'P' &&
@@ -2277,57 +2486,17 @@ function moverPeca(
             destino.linha === 7
         )
     ) {
-
-        movimentoPromocaoPendente = {
-
-            origem: {
-                linha: origem.linha,
-                coluna: origem.coluna
-            },
-
-            destino: {
-                linha: destino.linha,
-                coluna: destino.coluna
-            },
-
-            peca: nomePeca,
-
-            captura:
-                captura ||
-                capturaEnPassant,
-
-            enPassant:
-                capturaEnPassant
-        };
-
         abrirPromocao(
             casaDestino
         );
 
+        atualizarUltimoMovimentoVisual();
+
         return 'promocao';
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | CRIAR NOTAÇÃO
-    |--------------------------------------------------------------------------
-    */
 
-    let notacao =
-        criarNotacaoMovimento(
-            origem,
-            destino,
-            nomePeca,
-            captura || capturaEnPassant,
-            null,
-            capturaEnPassant
-        );
-
-    /*
-    |--------------------------------------------------------------------------
-    | TROCAR TURNO
-    |--------------------------------------------------------------------------
-    */
+    /* XEQUE */
 
     turno =
         turno === 'w'
@@ -2336,41 +2505,26 @@ function moverPeca(
 
     atualizarXeque();
 
-    /*
-    |--------------------------------------------------------------------------
-    | XEQUE / XEQUE-MATE
-    |--------------------------------------------------------------------------
-    */
+    adicionarIndicadorXeque();
 
-    notacao =
-        finalizarNotacao(
-            notacao
-        );
+    atualizarTurno();
 
-    /*
-    |--------------------------------------------------------------------------
-    | ADICIONAR HISTÓRICO
-    |--------------------------------------------------------------------------
-    */
+    atualizarUltimoMovimentoVisual();
 
-    adicionarAoHistorico(
-        notacao
-    );
+    verificarFimDeJogo();
 
     return true;
 }
 
-/*
-|--------------------------------------------------------------------------
-| FAZER ROQUE
-|--------------------------------------------------------------------------
-*/
+
+/* =====================================================
+   FAZER ROQUE
+   ===================================================== */
 
 function fazerRoque(
     origem,
     destino
 ) {
-
     const linha =
         origem.linha;
 
@@ -2379,10 +2533,14 @@ function fazerRoque(
         origem.coluna;
 
     const colunaTorreOrigem =
-        ladoRei ? 7 : 0;
+        ladoRei
+            ? 7
+            : 0;
 
     const colunaTorreDestino =
-        ladoRei ? 5 : 3;
+        ladoRei
+            ? 5
+            : 3;
 
     const torre =
         obterElementoPeca(
@@ -2400,7 +2558,6 @@ function fazerRoque(
         torre &&
         casaTorreDestino
     ) {
-
         casaTorreDestino.appendChild(
             torre
         );
@@ -2410,22 +2567,32 @@ function fazerRoque(
     }
 }
 
-/*
-|--------------------------------------------------------------------------
-| CRIAR TABULEIRO
-|--------------------------------------------------------------------------
-*/
+
+/* =====================================================
+   CRIAR TABULEIRO
+   ===================================================== */
 
 function criarTabuleiro() {
+    tabuleiro.innerHTML =
+        '';
 
-    tabuleiro.innerHTML = '';
+    const letras =
+        'abcdefgh';
 
-    for (let linha = 0; linha < 8; linha++) {
-
-        for (let coluna = 0; coluna < 8; coluna++) {
-
+    for (
+        let linha = 0;
+        linha < 8;
+        linha++
+    ) {
+        for (
+            let coluna = 0;
+            coluna < 8;
+            coluna++
+        ) {
             const casa =
-                document.createElement('div');
+                document.createElement(
+                    'div'
+                );
 
             casa.classList.add(
                 'casa'
@@ -2434,13 +2601,10 @@ function criarTabuleiro() {
             if (
                 (linha + coluna) % 2 === 0
             ) {
-
                 casa.classList.add(
                     'clara'
                 );
-
             } else {
-
                 casa.classList.add(
                     'escura'
                 );
@@ -2452,56 +2616,92 @@ function criarTabuleiro() {
             casa.dataset.coluna =
                 coluna;
 
-            /*
-            |--------------------------------------------------------------------------
-            | PRETAS
-            |--------------------------------------------------------------------------
-            */
 
-            if (linha === 0) {
+            /* COORDENADA DA COLUNA */
 
+            if (
+                linha === 7
+            ) {
+                const coordenadaColuna =
+                    document.createElement(
+                        'span'
+                    );
+
+                coordenadaColuna.className =
+                    'coordenada-coluna';
+
+                coordenadaColuna.textContent =
+                    letras[coluna];
+
+                casa.appendChild(
+                    coordenadaColuna
+                );
+            }
+
+
+            /* COORDENADA DA LINHA */
+
+            if (
+                coluna === 0
+            ) {
+                const coordenadaLinha =
+                    document.createElement(
+                        'span'
+                    );
+
+                coordenadaLinha.className =
+                    'coordenada-linha';
+
+                coordenadaLinha.textContent =
+                    8 - linha;
+
+                casa.appendChild(
+                    coordenadaLinha
+                );
+            }
+
+
+            /* PRETAS */
+
+            if (
+                linha === 0
+            ) {
                 criarPeca(
                     casa,
                     pecas.pretas[coluna]
                 );
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | PEÕES PRETOS
-            |--------------------------------------------------------------------------
-            */
 
-            if (linha === 1) {
+            /* PEÕES PRETOS */
 
+            if (
+                linha === 1
+            ) {
                 criarPeca(
                     casa,
                     'bP'
                 );
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | PEÕES BRANCOS
-            |--------------------------------------------------------------------------
-            */
 
-            if (linha === 6) {
+            /* PEÕES BRANCOS */
 
+            if (
+                linha === 6
+            ) {
                 criarPeca(
                     casa,
                     'wP'
                 );
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | BRANCAS
-            |--------------------------------------------------------------------------
-            */
 
-            if (linha === 7) {
+            /* BRANCAS */
 
+            if (
+                linha === 7
+            ) {
                 criarPeca(
                     casa,
                     pecas.brancas[coluna]
@@ -2515,19 +2715,19 @@ function criarTabuleiro() {
     }
 }
 
-/*
-|--------------------------------------------------------------------------
-| CRIAR PEÇA
-|--------------------------------------------------------------------------
-*/
+
+/* =====================================================
+   CRIAR PEÇA
+   ===================================================== */
 
 function criarPeca(
     casa,
     nomePeca
 ) {
-
     const imagem =
-        document.createElement('img');
+        document.createElement(
+            'img'
+        );
 
     imagem.classList.add(
         'peca'
@@ -2550,16 +2750,14 @@ function criarPeca(
     );
 }
 
-/*
-|--------------------------------------------------------------------------
-| CLIQUE NO TABULEIRO
-|--------------------------------------------------------------------------
-*/
+
+/* =====================================================
+   CLIQUE NO TABULEIRO
+   ===================================================== */
 
 tabuleiro.addEventListener(
     'click',
     function (event) {
-
         if (jogoEncerrado) {
             return;
         }
@@ -2569,31 +2767,34 @@ tabuleiro.addEventListener(
         }
 
         const casa =
-            event.target.closest('.casa');
+            event.target.closest(
+                '.casa'
+            );
 
         if (!casa) {
             return;
         }
 
-        const { linha, coluna } =
-            coordenadas(casa);
+        const {
+            linha,
+            coluna
+        } = coordenadas(casa);
 
         const peca =
-            obterPeca(linha, coluna);
+            obterPeca(
+                linha,
+                coluna
+            );
 
-        /*
-        |--------------------------------------------------------------------------
-        | NENHUMA PEÇA SELECIONADA
-        |--------------------------------------------------------------------------
-        */
+
+        /* NENHUMA SELECIONADA */
 
         if (!casaSelecionada) {
-
             if (
                 peca &&
-                corDaPeca(peca) === turno
+                corDaPeca(peca) ===
+                    turno
             ) {
-
                 casaSelecionada = {
                     linha,
                     coluna
@@ -2608,33 +2809,28 @@ tabuleiro.addEventListener(
             return;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | MESMA CASA
-        |--------------------------------------------------------------------------
-        */
+
+        /* MESMA CASA */
 
         if (
-            casaSelecionada.linha === linha &&
-            casaSelecionada.coluna === coluna
+            casaSelecionada.linha ===
+                linha &&
+            casaSelecionada.coluna ===
+                coluna
         ) {
-
             limparSelecao();
 
             return;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | OUTRA PEÇA DA MESMA COR
-        |--------------------------------------------------------------------------
-        */
+
+        /* OUTRA PEÇA DA MESMA COR */
 
         if (
             peca &&
-            corDaPeca(peca) === turno
+            corDaPeca(peca) ===
+                turno
         ) {
-
             limparSelecao();
 
             casaSelecionada = {
@@ -2650,11 +2846,8 @@ tabuleiro.addEventListener(
             return;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | VERIFICAR MOVIMENTO
-        |--------------------------------------------------------------------------
-        */
+
+        /* VERIFICAR MOVIMENTO */
 
         const movimentos =
             movimentosLegais(
@@ -2673,11 +2866,8 @@ tabuleiro.addEventListener(
             return;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | MOVER
-        |--------------------------------------------------------------------------
-        */
+
+        /* MOVER */
 
         const resultado =
             moverPeca(
@@ -2688,41 +2878,37 @@ tabuleiro.addEventListener(
                 }
             );
 
-        /*
-        |--------------------------------------------------------------------------
-        | PROMOÇÃO
-        |--------------------------------------------------------------------------
-        */
 
-        if (resultado === 'promocao') {
+        /* PROMOÇÃO */
 
+        if (
+            resultado ===
+            'promocao'
+        ) {
             limparSelecao();
 
             return;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | LIMPAR E VERIFICAR FIM
-        |--------------------------------------------------------------------------
-        */
-
         limparSelecao();
-
-        verificarFimDeJogo();
     }
 );
 
-/*
-|--------------------------------------------------------------------------
-| INICIAR
-|--------------------------------------------------------------------------
-*/
+
+/* =====================================================
+   INICIAR
+   ===================================================== */
+
+criarInterface();
 
 criarTabuleiro();
 
-criarHistorico();
-
 atualizarXeque();
 
+atualizarTurno();
+
 atualizarHistorico();
+
+atualizarUltimoMovimentoVisual();
+
+atualizarBotaoDesfazer();

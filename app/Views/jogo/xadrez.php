@@ -1,12 +1,8 @@
+
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 
 <head>
-
-    <link
-        rel="stylesheet"
-        href="<?= base_url('css/xadrez.css') ?>"
-    >
 
     <meta charset="UTF-8">
 
@@ -23,16 +19,51 @@
         type="image/png"
     >
 
+    <link
+        rel="stylesheet"
+        href="<?= base_url('css/xadrez.css') ?>"
+    >
+
 </head>
 
 <body>
 
-    <div id="tabuleiro"></div>
+    <main class="jogo">
+
+        <!-- ==============================
+             TABULEIRO
+             ============================== -->
+
+        <section class="tabuleiro-container">
+
+            <div id="tabuleiro"></div>
+
+        </section>
 
 
-    <!-- =================================================
-         INTERFACE DE PROMOÇÃO
-         ================================================= -->
+        <!-- ==============================
+             HISTÓRICO DE JOGADAS
+             ============================== -->
+
+        <section id="historico">
+
+            <div class="historico-titulo">
+                Histórico de jogadas
+            </div>
+
+            <div
+                id="listaHistorico"
+                class="lista-historico"
+            ></div>
+
+        </section>
+
+    </main>
+
+
+    <!-- ==============================
+         PROMOÇÃO DE PEÃO
+         ============================== -->
 
     <div
         id="promocao"
@@ -55,9 +86,18 @@
     </div>
 
 
+    <!-- ==============================
+         BASE URL
+         ============================== -->
+
     <script>
         const baseUrl = "<?= base_url('/') ?>";
     </script>
+
+
+    <!-- ==============================
+         JAVASCRIPT
+         ============================== -->
 
     <script
         src="<?= base_url('js/xadrez.js') ?>"

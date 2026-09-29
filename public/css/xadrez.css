@@ -1,35 +1,114 @@
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100%;
+}
+
 body {
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    margin: 0;
-    background-color: #0f0f0f;
     padding: 20px;
-    box-sizing: border-box;
+    background: #0f0f0f;
+    font-family: Arial, sans-serif;
 }
+
+
+/* =====================================================
+   CONTAINER PRINCIPAL
+   ===================================================== */
+
+.xadrez-container {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 20px;
+    width: 100%;
+}
+
+
+/* =====================================================
+   ÁREA DO TABULEIRO
+   ===================================================== */
+
+.area-tabuleiro {
+    display: flex;
+    flex-direction: column;
+    width: min(640px, 90vw);
+    flex: 0 0 auto;
+}
+
+
+/* =====================================================
+   TURNO
+   ===================================================== */
+
+.turno {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 10px 14px;
+    background: #262421;
+    border: 1px solid #444;
+    border-radius: 6px;
+    color: #fff;
+    text-align: center;
+    font-size: 15px;
+    font-weight: bold;
+}
+
+
+/* =====================================================
+   TABULEIRO
+   ===================================================== */
 
 #tabuleiro {
-    width: 100%;
-    max-width: 640px;
+    width: min(640px, 90vw);
+    height: min(640px, 90vw);
+
+    flex: 0 0 auto;
 
     display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    grid-template-rows: repeat(8, 1fr);
 
-    border: 2px solid black;
-    box-sizing: border-box;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-template-rows: repeat(8, minmax(0, 1fr));
+
+    border: 2px solid #000;
+
+    overflow: hidden;
+
+    aspect-ratio: 1 / 1;
+
+    position: relative;
 }
+
+
+/* =====================================================
+   CASAS
+   ===================================================== */
 
 .casa {
     width: 100%;
     height: 100%;
 
+    min-width: 0;
+    min-height: 0;
+
     display: flex;
+
     align-items: center;
     justify-content: center;
 
     position: relative;
+
+    overflow: hidden;
 }
 
 .casa.clara {
@@ -40,36 +119,118 @@ body {
     background-color: #b58863;
 }
 
-.peca {
-    width: 80%;
-    height: 80%;
-    object-fit: contain;
-    user-select: none;
+
+/* =====================================================
+   COORDENADAS
+   ===================================================== */
+
+.coordenada-coluna,
+.coordenada-linha {
+    position: absolute;
+
+    z-index: 2;
+
+    font-size: 11px;
+    font-weight: bold;
+
     pointer-events: none;
+
+    opacity: 0.75;
 }
 
-.selecionada {
-    box-shadow: inset 0 0 0 4px rgba(255, 215, 0, 0.8);
+.coordenada-coluna {
+    right: 4px;
+    bottom: 2px;
 }
+
+.coordenada-linha {
+    left: 4px;
+    top: 2px;
+}
+
+.casa.clara .coordenada-coluna,
+.casa.clara .coordenada-linha {
+    color: #b58863;
+}
+
+.casa.escura .coordenada-coluna,
+.casa.escura .coordenada-linha {
+    color: #f0d9b5;
+}
+
+
+/* =====================================================
+   PEÇAS
+   ===================================================== */
+
+.peca {
+    display: block;
+
+    width: 80%;
+    height: 80%;
+
+    max-width: 100%;
+    max-height: 100%;
+
+    object-fit: contain;
+
+    user-select: none;
+    pointer-events: none;
+
+    position: relative;
+
+    z-index: 3;
+}
+
+
+/* =====================================================
+   CASA SELECIONADA
+   ===================================================== */
+
+.selecionada {
+    box-shadow:
+        inset 0 0 0 4px
+        rgba(255, 215, 0, 0.8);
+}
+
+
+/* =====================================================
+   ÚLTIMO MOVIMENTO
+   ===================================================== */
+
+.ultimo-movimento {
+    box-shadow:
+        inset 0 0 0 4px
+        rgba(255, 210, 70, 0.45);
+}
+
+
+/* =====================================================
+   MOVIMENTOS
+   ===================================================== */
 
 .movimento::after {
     content: "";
 
+    position: absolute;
+
     width: 20%;
     height: 20%;
-
-    background: rgba(0, 0, 0, 0.25);
-
-    border-radius: 50%;
-
-    position: absolute;
 
     left: 50%;
     top: 50%;
 
-    transform: translate(-50%, -50%);
+    transform:
+        translate(-50%, -50%);
+
+    background:
+        rgba(0, 0, 0, 0.25);
+
+    border-radius: 50%;
 
     pointer-events: none;
+
+    z-index: 1;
 }
 
 .movimento.captura::after {
@@ -78,185 +239,85 @@ body {
 
     background: transparent;
 
-    border: 5px solid rgba(0, 0, 0, 0.25);
+    border:
+        5px solid
+        rgba(0, 0, 0, 0.25);
 
     box-sizing: border-box;
 }
+
+
+/* =====================================================
+   XEQUE
+   ===================================================== */
 
 .xeque {
-    box-shadow: inset 0 0 0 5px rgba(220, 0, 0, 0.8);
-}
-
-
-/* =====================================================
-   PROMOÇÃO
-   ===================================================== */
-
-.promocao-overlay {
-    position: fixed;
-
-    inset: 0;
-
-    display: none;
-
-    align-items: center;
-    justify-content: center;
-
-    background: rgba(0, 0, 0, 0.65);
-
-    z-index: 1000;
-}
-
-.promocao-overlay.ativa {
-    display: flex;
-}
-
-
-/* =====================================================
-   PAINEL DA PROMOÇÃO
-   ===================================================== */
-
-.promocao-caixa {
-    width: 360px;
-    max-width: calc(100vw - 40px);
-
-    padding: 20px;
-
-    background: #262421;
-
-    border: 1px solid #444;
-
-    border-radius: 8px;
-
     box-shadow:
-        0 10px 30px rgba(0, 0, 0, 0.6);
-
-    text-align: center;
-
-    box-sizing: border-box;
-}
-
-.promocao-caixa h2 {
-    margin: 0 0 8px;
-
-    color: #ffffff;
-
-    font-family: Arial, sans-serif;
-
-    font-size: 22px;
-}
-
-.promocao-caixa p {
-    margin: 0 0 18px;
-
-    color: #bdbdbd;
-
-    font-family: Arial, sans-serif;
-
-    font-size: 14px;
+        inset 0 0 0 5px
+        rgba(220, 0, 0, 0.8);
 }
 
 
 /* =====================================================
-   OPÇÕES
+   CONTROLES
    ===================================================== */
 
-.opcoes-promocao {
-    display: grid;
-
-    grid-template-columns: repeat(4, 1fr);
+.controles {
+    display: flex;
 
     gap: 10px;
+
+    margin-top: 10px;
 }
 
+.controle-botao {
+    flex: 1;
 
-/* =====================================================
-   BOTÕES
-   ===================================================== */
+    padding: 11px 14px;
 
-.opcao-promocao {
-    display: flex;
-
-    align-items: center;
-    justify-content: center;
-
-    aspect-ratio: 1 / 1;
-
-    padding: 8px;
-
-    border: 2px solid transparent;
-
+    border: 1px solid #444;
     border-radius: 6px;
 
-    background-color: #3a3937;
+    background: #262421;
+
+    color: #fff;
+
+    font-size: 14px;
+    font-weight: bold;
 
     cursor: pointer;
-
-    transition:
-        background-color 0.15s ease,
-        border-color 0.15s ease,
-        transform 0.15s ease;
 }
 
-.opcao-promocao:hover {
-    background-color: #4a4845;
-
-    border-color: #d8a84e;
-
-    transform: translateY(-2px);
+.controle-botao:hover {
+    background: #302e2b;
 }
 
-.opcao-promocao:active {
-    transform: translateY(0);
-}
-
-.opcao-promocao img {
-    width: 100%;
-    height: 100%;
-
-    object-fit: contain;
-
-    pointer-events: none;
+.controle-botao:disabled {
+    opacity: 0.4;
+    cursor: default;
 }
 
 
 /* =====================================================
-   CELULAR
+   HISTÓRICO
    ===================================================== */
 
-@media (max-width: 500px) {
-
-    body {
-        padding: 10px;
-    }
-
-    .promocao-caixa {
-        width: 300px;
-
-        padding: 16px;
-    }
-
-    .promocao-caixa h2 {
-        font-size: 20px;
-    }
-
-}
 #historico {
     width: 280px;
+
     max-height: 500px;
-    margin-left: 20px;
 
     background: #262421;
+
     border: 1px solid #444;
+
     border-radius: 8px;
 
-    color: #ffffff;
-
-    font-family: Arial, sans-serif;
-
-    box-sizing: border-box;
+    color: #fff;
 
     overflow: hidden;
+
+    flex: 0 0 auto;
 }
 
 .historico-titulo {
@@ -279,13 +340,16 @@ body {
 .linha-historico {
     display: grid;
 
-    grid-template-columns: 35px 1fr 1fr;
+    grid-template-columns:
+        35px 1fr 1fr;
 
     padding: 8px 10px;
 
     font-size: 15px;
 
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom:
+        1px solid
+        rgba(255, 255, 255, 0.05);
 }
 
 .numero-movimento {
@@ -298,7 +362,8 @@ body {
 }
 
 .linha-historico:nth-child(even) {
-    background: rgba(255, 255, 255, 0.03);
+    background:
+        rgba(255, 255, 255, 0.03);
 }
 
 .lista-historico::-webkit-scrollbar {
@@ -307,26 +372,249 @@ body {
 
 .lista-historico::-webkit-scrollbar-thumb {
     background: #555;
+
     border-radius: 10px;
 }
+
+
+/* =====================================================
+   PROMOÇÃO
+   ===================================================== */
+
+.promocao-overlay {
+    position: fixed;
+
+    inset: 0;
+
+    display: none;
+
+    align-items: center;
+    justify-content: center;
+
+    background:
+        rgba(0, 0, 0, 0.65);
+
+    z-index: 1000;
+}
+
+.promocao-overlay.ativa {
+    display: flex;
+}
+
+.promocao-caixa {
+    width: 360px;
+
+    max-width:
+        calc(100vw - 40px);
+
+    padding: 20px;
+
+    background: #262421;
+
+    border: 1px solid #444;
+
+    border-radius: 8px;
+
+    box-shadow:
+        0 10px 30px
+        rgba(0, 0, 0, 0.6);
+
+    text-align: center;
+}
+
+.promocao-caixa h2 {
+    margin: 0 0 8px;
+
+    color: #fff;
+
+    font-size: 22px;
+}
+
+.promocao-caixa p {
+    margin: 0 0 18px;
+
+    color: #bdbdbd;
+
+    font-size: 14px;
+}
+
+.opcoes-promocao {
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap: 10px;
+}
+
+.opcao-promocao {
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    aspect-ratio: 1 / 1;
+
+    padding: 8px;
+
+    border: 2px solid transparent;
+
+    border-radius: 6px;
+
+    background-color: #3a3937;
+
+    cursor: pointer;
+}
+
+.opcao-promocao:hover {
+    background-color: #4a4845;
+
+    border-color: #d8a84e;
+}
+
+.opcao-promocao img {
+    width: 100%;
+    height: 100%;
+
+    object-fit: contain;
+
+    pointer-events: none;
+}
+
+
+/* =====================================================
+   FIM DE JOGO
+   ===================================================== */
+
+.fim-jogo {
+    position: fixed;
+
+    inset: 0;
+
+    display: none;
+
+    align-items: center;
+    justify-content: center;
+
+    background:
+        rgba(0, 0, 0, 0.7);
+
+    z-index: 2000;
+}
+
+.fim-jogo.ativo {
+    display: flex;
+}
+
+.fim-jogo-caixa {
+    width: 340px;
+
+    max-width:
+        calc(100vw - 40px);
+
+    padding: 25px;
+
+    background: #262421;
+
+    border: 1px solid #444;
+
+    border-radius: 8px;
+
+    text-align: center;
+
+    color: #fff;
+}
+
+.fim-jogo-caixa h2 {
+    margin: 0 0 10px;
+
+    font-size: 24px;
+}
+
+.fim-jogo-caixa p {
+    margin: 0 0 20px;
+
+    color: #bbb;
+}
+
+.botao-nova-partida {
+    width: 100%;
+
+    padding: 12px;
+
+    border: 0;
+
+    border-radius: 6px;
+
+    background: #d8a84e;
+
+    color: #171717;
+
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+
+/* =====================================================
+   CELULAR
+   ===================================================== */
 
 @media (max-width: 900px) {
 
     body {
+        align-items: flex-start;
+    }
+
+    .xadrez-container {
         flex-direction: column;
+
+        align-items: center;
+
+        gap: 15px;
     }
 
     #historico {
-        width: 100%;
-        max-width: 640px;
-
-        margin-left: 0;
-        margin-top: 20px;
+        width: min(640px, 90vw);
 
         max-height: 250px;
     }
 
     .lista-historico {
         max-height: 200px;
+    }
+
+    .area-tabuleiro {
+        width: min(640px, 90vw);
+    }
+}
+
+
+@media (max-width: 500px) {
+
+    body {
+        padding: 10px;
+    }
+
+    .turno {
+        font-size: 14px;
+    }
+
+    .controle-botao {
+        padding: 10px;
+    }
+
+    .promocao-caixa {
+        width: 300px;
+
+        padding: 16px;
+    }
+
+    .promocao-caixa h2 {
+        font-size: 20px;
+    }
+
+    .fim-jogo-caixa {
+        width: 300px;
     }
 }
