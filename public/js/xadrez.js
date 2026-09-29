@@ -1,13 +1,46 @@
 const tabuleiro = document.getElementById('tabuleiro');
 
+const promocaoOverlay =
+    document.getElementById('promocao');
+
+const opcoesPromocao =
+    document.getElementById('opcoesPromocao');
+
+
 const pecas = {
-    pretas: ['bR', 'bN', 'bB', 'bQ', 'bK', 'bB', 'bN', 'bR'],
-    brancas: ['wR', 'wN', 'wB', 'wQ', 'wK', 'wB', 'wN', 'wR']
+
+    pretas: [
+        'bR',
+        'bN',
+        'bB',
+        'bQ',
+        'bK',
+        'bB',
+        'bN',
+        'bR'
+    ],
+
+    brancas: [
+        'wR',
+        'wN',
+        'wB',
+        'wQ',
+        'wK',
+        'wB',
+        'wN',
+        'wR'
+    ]
+
 };
 
+
 let casaSelecionada = null;
+
 let turno = 'w';
+
 let jogoEncerrado = false;
+
+let promocaoPendente = null;
 
 
 // =====================================================
@@ -16,14 +49,16 @@ let jogoEncerrado = false;
 
 function limparSelecao() {
 
-    document.querySelectorAll('.casa').forEach(casa => {
+    document
+        .querySelectorAll('.casa')
+        .forEach(casa => {
 
-        casa.classList.remove('selecionada');
-        casa.classList.remove('movimento');
-        casa.classList.remove('captura');
-        casa.classList.remove('roque');
+            casa.classList.remove('selecionada');
+            casa.classList.remove('movimento');
+            casa.classList.remove('captura');
+            casa.classList.remove('roque');
 
-    });
+        });
 
     casaSelecionada = null;
 }
@@ -35,7 +70,8 @@ function obterPeca(casa) {
         return null;
     }
 
-    const imagem = casa.querySelector('.peca');
+    const imagem =
+        casa.querySelector('.peca');
 
     if (!imagem) {
         return null;
@@ -80,13 +116,19 @@ function tipoDaPeca(nomePeca) {
 
 function coordenadas(casa) {
 
-    const casas = [...document.querySelectorAll('.casa')];
+    const casas =
+        [...document.querySelectorAll('.casa')];
 
-    const indice = casas.indexOf(casa);
+    const indice =
+        casas.indexOf(casa);
 
     return {
-        linha: Math.floor(indice / 8),
-        coluna: indice % 8
+
+        linha:
+            Math.floor(indice / 8),
+
+        coluna:
+            indice % 8
     };
 }
 
@@ -102,9 +144,12 @@ function pegarCasa(linha, coluna) {
         return null;
     }
 
-    const casas = document.querySelectorAll('.casa');
+    const casas =
+        document.querySelectorAll('.casa');
 
-    return casas[linha * 8 + coluna];
+    return casas[
+        linha * 8 + coluna
+    ];
 }
 
 
@@ -114,8 +159,11 @@ function pegarCasa(linha, coluna) {
 
 function caminhoLivre(origem, destino) {
 
-    const origemCoord = coordenadas(origem);
-    const destinoCoord = coordenadas(destino);
+    const origemCoord =
+        coordenadas(origem);
+
+    const destinoCoord =
+        coordenadas(destino);
 
     const dl =
         destinoCoord.linha -
@@ -152,7 +200,8 @@ function caminhoLivre(origem, destino) {
         coluna !== destinoCoord.coluna
     ) {
 
-        const casa = pegarCasa(linha, coluna);
+        const casa =
+            pegarCasa(linha, coluna);
 
         if (obterPeca(casa)) {
             return false;
@@ -180,8 +229,11 @@ function movimentosDeslizantes(
 
     for (const [dl, dc] of direcoes) {
 
-        let novaLinha = linha + dl;
-        let novaColuna = coluna + dc;
+        let novaLinha =
+            linha + dl;
+
+        let novaColuna =
+            coluna + dc;
 
         while (
             novaLinha >= 0 &&
@@ -211,11 +263,11 @@ function movimentosDeslizantes(
                 const tipoDestino =
                     tipoDaPeca(peca);
 
-                // Nunca podemos capturar o rei.
                 if (
                     corDestino !== cor &&
                     tipoDestino !== 'K'
                 ) {
+
                     resultado.push(destino);
                 }
 
@@ -230,33 +282,44 @@ function movimentosDeslizantes(
 
 
 // =====================================================
-// CASA É ATACADA
+// CASA ATACADA
 // =====================================================
 
-function casaAtacada(casa, corAtacante) {
+function casaAtacada(
+    casa,
+    corAtacante
+) {
 
     if (!casa) {
         return false;
     }
 
-    const casas = document.querySelectorAll('.casa');
+    const casas =
+        document.querySelectorAll('.casa');
 
     for (const origem of casas) {
 
-        const peca = obterPeca(origem);
+        const peca =
+            obterPeca(origem);
 
         if (!peca) {
             continue;
         }
 
-        if (corDaPeca(peca) !== corAtacante) {
+        if (
+            corDaPeca(peca) !== corAtacante
+        ) {
             continue;
         }
 
-        const tipo = tipoDaPeca(peca);
+        const tipo =
+            tipoDaPeca(peca);
 
-        const origemCoord = coordenadas(origem);
-        const destinoCoord = coordenadas(casa);
+        const origemCoord =
+            coordenadas(origem);
+
+        const destinoCoord =
+            coordenadas(casa);
 
         const dl =
             destinoCoord.linha -
@@ -267,9 +330,7 @@ function casaAtacada(casa, corAtacante) {
             origemCoord.coluna;
 
 
-        // =================================================
         // PEÃO
-        // =================================================
 
         if (tipo === 'P') {
 
@@ -289,9 +350,7 @@ function casaAtacada(casa, corAtacante) {
         }
 
 
-        // =================================================
         // CAVALO
-        // =================================================
 
         if (tipo === 'N') {
 
@@ -312,9 +371,7 @@ function casaAtacada(casa, corAtacante) {
         }
 
 
-        // =================================================
         // REI
-        // =================================================
 
         if (tipo === 'K') {
 
@@ -333,30 +390,28 @@ function casaAtacada(casa, corAtacante) {
         }
 
 
-        // =================================================
         // TORRE
-        // =================================================
 
         if (tipo === 'R') {
 
             if (
-                dl === 0 ||
-                dc === 0
+                (
+                    dl === 0 ||
+                    dc === 0
+                ) &&
+                (
+                    dl !== 0 ||
+                    dc !== 0
+                )
             ) {
 
                 if (
-                    dl !== 0 ||
-                    dc !== 0
+                    caminhoLivre(
+                        origem,
+                        casa
+                    )
                 ) {
-
-                    if (
-                        caminhoLivre(
-                            origem,
-                            casa
-                        )
-                    ) {
-                        return true;
-                    }
+                    return true;
                 }
             }
 
@@ -364,9 +419,7 @@ function casaAtacada(casa, corAtacante) {
         }
 
 
-        // =================================================
         // BISPO
-        // =================================================
 
         if (tipo === 'B') {
 
@@ -389,9 +442,7 @@ function casaAtacada(casa, corAtacante) {
         }
 
 
-        // =================================================
         // DAMA
-        // =================================================
 
         if (tipo === 'Q') {
 
@@ -403,11 +454,12 @@ function casaAtacada(casa, corAtacante) {
                 Math.abs(dl) === Math.abs(dc);
 
 
-            // Dama andando como torre
-
             if (
                 movimentoReto &&
-                (dl !== 0 || dc !== 0)
+                (
+                    dl !== 0 ||
+                    dc !== 0
+                )
             ) {
 
                 if (
@@ -420,8 +472,6 @@ function casaAtacada(casa, corAtacante) {
                 }
             }
 
-
-            // Dama andando como bispo
 
             if (
                 movimentoDiagonal &&
@@ -444,6 +494,8 @@ function casaAtacada(casa, corAtacante) {
 
     return false;
 }
+
+
 // =====================================================
 // ENCONTRAR REI
 // =====================================================
@@ -470,7 +522,7 @@ function encontrarRei(cor) {
 
 
 // =====================================================
-// REI ESTÁ EM XEQUE?
+// REI EM XEQUE
 // =====================================================
 
 function estaEmXeque(cor) {
@@ -495,7 +547,7 @@ function estaEmXeque(cor) {
 
 
 // =====================================================
-// PODE FAZER ROQUE?
+// ROQUE
 // =====================================================
 
 function podeFazerRoque(
@@ -540,12 +592,7 @@ function podeFazerRoque(
         return false;
     }
 
-
-    // Rei não pode estar em xeque.
-
-    if (
-        estaEmXeque(cor)
-    ) {
+    if (estaEmXeque(cor)) {
         return false;
     }
 
@@ -559,10 +606,6 @@ function podeFazerRoque(
     let colunaPassagem;
 
 
-    // =================================================
-    // ROQUE PEQUENO
-    // =================================================
-
     if (
         lado === 'pequeno'
     ) {
@@ -571,24 +614,13 @@ function podeFazerRoque(
         colunaDestino = 6;
         colunaPassagem = 5;
 
-    }
-
-
-    // =================================================
-    // ROQUE GRANDE
-    // =================================================
-
-    else {
+    } else {
 
         colunaTorre = 0;
         colunaDestino = 2;
         colunaPassagem = 3;
     }
 
-
-    // =================================================
-    // TORRE
-    // =================================================
 
     const casaTorre =
         pegarCasa(
@@ -618,10 +650,6 @@ function podeFazerRoque(
         return false;
     }
 
-
-    // =================================================
-    // CASAS VAZIAS
-    // =================================================
 
     if (
         lado === 'pequeno'
@@ -655,10 +683,6 @@ function podeFazerRoque(
         }
     }
 
-
-    // =================================================
-    // CASAS ATACADAS
-    // =================================================
 
     const casaPassagem =
         pegarCasa(
@@ -733,27 +757,17 @@ function obterMovimentosBrutos(casa) {
         const pecaDestino =
             obterPeca(destino);
 
-
-        // Casa vazia.
-
         if (!pecaDestino) {
 
             movimentos.push(destino);
-
             return;
         }
-
-
-        // Peça própria bloqueia.
 
         if (
             corDaPeca(pecaDestino) === cor
         ) {
             return;
         }
-
-
-        // Nunca capturar rei.
 
         if (
             tipoDaPeca(pecaDestino) === 'K'
@@ -765,9 +779,7 @@ function obterMovimentosBrutos(casa) {
     }
 
 
-    // =================================================
     // PEÃO
-    // =================================================
 
     if (tipo === 'P') {
 
@@ -816,8 +828,6 @@ function obterMovimentosBrutos(casa) {
         }
 
 
-        // Capturas diagonais.
-
         for (
             const dc of [-1, 1]
         ) {
@@ -856,9 +866,7 @@ function obterMovimentosBrutos(casa) {
     }
 
 
-    // =================================================
     // CAVALO
-    // =================================================
 
     if (tipo === 'N') {
 
@@ -882,72 +890,57 @@ function obterMovimentosBrutos(casa) {
                     linha + dl,
                     coluna + dc
                 );
-
             }
         );
     }
 
 
-    // =================================================
     // BISPO
-    // =================================================
 
     if (tipo === 'B') {
 
         movimentosDeslizantes(
-
             linha,
             coluna,
             cor,
-
             [
                 [-1, -1],
                 [-1, 1],
                 [1, -1],
                 [1, 1]
             ],
-
             movimentos
         );
     }
 
 
-    // =================================================
     // TORRE
-    // =================================================
 
     if (tipo === 'R') {
 
         movimentosDeslizantes(
-
             linha,
             coluna,
             cor,
-
             [
                 [-1, 0],
                 [1, 0],
                 [0, -1],
                 [0, 1]
             ],
-
             movimentos
         );
     }
 
 
-    // =================================================
     // DAMA
-    // =================================================
 
     if (tipo === 'Q') {
 
         movimentosDeslizantes(
-
             linha,
             coluna,
             cor,
-
             [
                 [-1, -1],
                 [-1, 1],
@@ -958,15 +951,12 @@ function obterMovimentosBrutos(casa) {
                 [0, -1],
                 [0, 1]
             ],
-
             movimentos
         );
     }
 
 
-    // =================================================
     // REI
-    // =================================================
 
     if (tipo === 'K') {
 
@@ -997,8 +987,6 @@ function obterMovimentosBrutos(casa) {
         }
 
 
-        // Roque pequeno.
-
         if (
             podeFazerRoque(
                 casa,
@@ -1015,8 +1003,6 @@ function obterMovimentosBrutos(casa) {
             );
         }
 
-
-        // Roque grande.
 
         if (
             podeFazerRoque(
@@ -1072,14 +1058,9 @@ function simularMovimento(
     };
 
 
-    // Remove a peça capturada.
-
     if (pecaDestino) {
         pecaDestino.remove();
     }
-
-
-    // Move temporariamente.
 
     destino.appendChild(
         pecaOrigem
@@ -1149,10 +1130,6 @@ function movimentosLegais(casa) {
             coordenadas(destino);
 
 
-        // =================================================
-        // ROQUE
-        // =================================================
-
         if (
             tipo === 'K' &&
             Math.abs(
@@ -1161,20 +1138,10 @@ function movimentosLegais(casa) {
             ) === 2
         ) {
 
-            /*
-             * O roque já foi completamente
-             * validado por podeFazerRoque().
-             */
-
             movimentos.push(destino);
-
             continue;
         }
 
-
-        // =================================================
-        // SIMULAR MOVIMENTO
-        // =================================================
 
         const estado =
             simularMovimento(
@@ -1187,27 +1154,14 @@ function movimentosLegais(casa) {
         }
 
 
-        // =================================================
-        // VERIFICAR SE O PRÓPRIO REI
-        // CONTINUA EM XEQUE
-        // =================================================
-
         const reiAindaEmXeque =
             estaEmXeque(cor);
 
-
-        // =================================================
-        // DESFAZER MOVIMENTO
-        // =================================================
 
         desfazerMovimento(
             estado
         );
 
-
-        // =================================================
-        // MOVIMENTO LEGAL
-        // =================================================
 
         if (!reiAindaEmXeque) {
 
@@ -1256,10 +1210,6 @@ function mostrarMovimentos(casa) {
         );
 
 
-        // =================================================
-        // CAPTURA
-        // =================================================
-
         if (
             pecaDestino &&
             corDaPeca(pecaDestino) !== cor
@@ -1270,10 +1220,6 @@ function mostrarMovimentos(casa) {
             );
         }
 
-
-        // =================================================
-        // ROQUE
-        // =================================================
 
         const colunaDestino =
             coordenadas(destino).coluna;
@@ -1295,7 +1241,7 @@ function mostrarMovimentos(casa) {
 
 
 // =====================================================
-// EXISTEM MOVIMENTOS LEGAIS?
+// EXISTEM MOVIMENTOS
 // =====================================================
 
 function existemMovimentos(cor) {
@@ -1382,7 +1328,7 @@ function atualizarXeque() {
 
 
 // =====================================================
-// VERIFICAR FIM DE JOGO
+// FIM DE JOGO
 // =====================================================
 
 function verificarFimDeJogo() {
@@ -1393,10 +1339,6 @@ function verificarFimDeJogo() {
     const temMovimentos =
         existemMovimentos(turno);
 
-
-    // =================================================
-    // XEQUE-MATE
-    // =================================================
 
     if (
         emXeque &&
@@ -1420,10 +1362,6 @@ function verificarFimDeJogo() {
     }
 
 
-    // =================================================
-    // AFOGAMENTO
-    // =================================================
-
     if (
         !emXeque &&
         !temMovimentos
@@ -1437,6 +1375,199 @@ function verificarFimDeJogo() {
 
         return;
     }
+}
+
+
+// =====================================================
+// ABRIR PROMOÇÃO
+// =====================================================
+
+function abrirPromocao(casa) {
+
+    const nomePeca =
+        obterPeca(casa);
+
+    if (!nomePeca) {
+        return;
+    }
+
+    if (
+        tipoDaPeca(nomePeca) !== 'P'
+    ) {
+        return;
+    }
+
+    const cor =
+        corDaPeca(nomePeca);
+
+    const { linha } =
+        coordenadas(casa);
+
+
+    if (
+        cor === 'w' &&
+        linha !== 0
+    ) {
+        return;
+    }
+
+    if (
+        cor === 'b' &&
+        linha !== 7
+    ) {
+        return;
+    }
+
+
+    promocaoPendente = casa;
+
+    opcoesPromocao.innerHTML = '';
+
+
+    const opcoes = [
+        {
+            tipo: 'Q',
+            nome: 'Dama'
+        },
+        {
+            tipo: 'R',
+            nome: 'Torre'
+        },
+        {
+            tipo: 'B',
+            nome: 'Bispo'
+        },
+        {
+            tipo: 'N',
+            nome: 'Cavalo'
+        }
+    ];
+
+
+    opcoes.forEach(opcao => {
+
+        const botao =
+            document.createElement('button');
+
+        botao.classList.add(
+            'opcao-promocao'
+        );
+
+        botao.type = 'button';
+
+        botao.title =
+            opcao.nome;
+
+
+        const imagem =
+            document.createElement('img');
+
+        imagem.src =
+            `${baseUrl}img/pecas/${cor}${opcao.tipo}.svg`;
+
+        imagem.alt =
+            opcao.nome;
+
+
+        botao.appendChild(
+            imagem
+        );
+
+
+        botao.addEventListener(
+            'click',
+            () => {
+
+                escolherPromocao(
+                    opcao.tipo
+                );
+
+            }
+        );
+
+
+        opcoesPromocao.appendChild(
+            botao
+        );
+    });
+
+
+    promocaoOverlay.classList.add(
+        'ativa'
+    );
+}
+
+
+// =====================================================
+// ESCOLHER PROMOÇÃO
+// =====================================================
+
+function escolherPromocao(tipo) {
+
+    if (!promocaoPendente) {
+        return;
+    }
+
+    const casa =
+        promocaoPendente;
+
+    const peca =
+        obterElementoPeca(casa);
+
+    if (!peca) {
+        fecharPromocao();
+        return;
+    }
+
+    const nomeAtual =
+        obterPeca(casa);
+
+    const cor =
+        corDaPeca(nomeAtual);
+
+    const novaPeca =
+        `${cor}${tipo}`;
+
+
+    peca.src =
+        `${baseUrl}img/pecas/${novaPeca}.svg`;
+
+    peca.dataset.moveu =
+        'true';
+
+
+    fecharPromocao();
+
+
+    // Agora que a promoção terminou,
+    // atualizamos o estado do jogo.
+
+    turno =
+        turno === 'w'
+            ? 'b'
+            : 'w';
+
+    atualizarXeque();
+
+    verificarFimDeJogo();
+
+    limparSelecao();
+}
+
+
+// =====================================================
+// FECHAR PROMOÇÃO
+// =====================================================
+
+function fecharPromocao() {
+
+    promocaoOverlay.classList.remove(
+        'ativa'
+    );
+
+    opcoesPromocao.innerHTML = '';
+
+    promocaoPendente = null;
 }
 
 
@@ -1472,6 +1603,44 @@ function moverPeca(
     peca.dataset.moveu =
         'true';
 
+
+    const nomePeca =
+        obterPeca(destino);
+
+
+    // =================================================
+    // PROMOÇÃO
+    // =================================================
+
+    if (
+        tipoDaPeca(nomePeca) === 'P'
+    ) {
+
+        const cor =
+            corDaPeca(nomePeca);
+
+        const { linha } =
+            coordenadas(destino);
+
+        const chegouNoFim =
+            (
+                cor === 'w' &&
+                linha === 0
+            ) ||
+            (
+                cor === 'b' &&
+                linha === 7
+            );
+
+
+        if (chegouNoFim) {
+
+            abrirPromocao(destino);
+
+            return 'promocao';
+        }
+    }
+
     return true;
 }
 
@@ -1496,10 +1665,6 @@ function fazerRoque(
         origemCoord.coluna;
 
 
-    // =================================================
-    // ROQUE PEQUENO
-    // =================================================
-
     if (
         diferenca === 2
     ) {
@@ -1523,10 +1688,6 @@ function fazerRoque(
     }
 
 
-    // =================================================
-    // ROQUE GRANDE
-    // =================================================
-
     else if (
         diferenca === -2
     ) {
@@ -1549,8 +1710,6 @@ function fazerRoque(
         );
     }
 
-
-    // Move o rei.
 
     moverPeca(
         rei,
@@ -1583,9 +1742,7 @@ for (
         );
 
 
-        // =================================================
         // COR DA CASA
-        // =================================================
 
         if (
             (linha + coluna) % 2 === 0
@@ -1606,9 +1763,7 @@ for (
         let nomePeca = null;
 
 
-        // =================================================
         // PRETAS
-        // =================================================
 
         if (
             linha === 0
@@ -1619,9 +1774,7 @@ for (
         }
 
 
-        // =================================================
         // PEÕES PRETOS
-        // =================================================
 
         if (
             linha === 1
@@ -1631,9 +1784,7 @@ for (
         }
 
 
-        // =================================================
         // PEÕES BRANCOS
-        // =================================================
 
         if (
             linha === 6
@@ -1643,9 +1794,7 @@ for (
         }
 
 
-        // =================================================
         // BRANCAS
-        // =================================================
 
         if (
             linha === 7
@@ -1656,9 +1805,7 @@ for (
         }
 
 
-        // =================================================
         // CRIAR IMAGEM
-        // =================================================
 
         if (nomePeca) {
 
@@ -1681,9 +1828,7 @@ for (
         }
 
 
-        // =================================================
         // CLIQUE
-        // =================================================
 
         casa.addEventListener(
             'click',
@@ -1696,9 +1841,17 @@ for (
                 }
 
 
-                // =================================================
+                // Não deixa mexer enquanto
+                // a promoção está aberta.
+
+                if (
+                    promocaoPendente
+                ) {
+                    return;
+                }
+
+
                 // PRIMEIRO CLIQUE
-                // =================================================
 
                 if (
                     casaSelecionada === null
@@ -1735,23 +1888,18 @@ for (
                 }
 
 
-                // =================================================
                 // MESMA CASA
-                // =================================================
 
                 if (
                     casa === casaSelecionada
                 ) {
 
                     limparSelecao();
-
                     return;
                 }
 
 
-                // =================================================
                 // OUTRA PEÇA DO MESMO JOGADOR
-                // =================================================
 
                 const pecaClicada =
                     obterPeca(casa);
@@ -1780,9 +1928,7 @@ for (
                 }
 
 
-                // =================================================
                 // MOVIMENTOS PERMITIDOS
-                // =================================================
 
                 const movimentosPermitidos =
                     movimentosLegais(
@@ -1794,7 +1940,6 @@ for (
                         casa
                     )
                 ) {
-
                     return;
                 }
 
@@ -1810,14 +1955,11 @@ for (
                 if (!peca) {
 
                     limparSelecao();
-
                     return;
                 }
 
 
-                // =================================================
                 // ROQUE
-                // =================================================
 
                 if (
                     casa.classList.contains(
@@ -1830,22 +1972,47 @@ for (
                         casa
                     );
 
-                } else {
+                    turno =
+                        turno === 'w'
+                            ? 'b'
+                            : 'w';
 
-                    // =================================================
-                    // MOVIMENTO NORMAL
-                    // =================================================
+                    atualizarXeque();
 
+                    verificarFimDeJogo();
+
+                    limparSelecao();
+
+                    return;
+                }
+
+
+                // MOVIMENTO NORMAL
+
+                const resultado =
                     moverPeca(
                         origem,
                         casa
                     );
+
+
+                // Promoção:
+                // NÃO troca o turno ainda.
+                //
+                // O turno só muda quando o jogador
+                // escolher a peça.
+
+                if (
+                    resultado === 'promocao'
+                ) {
+
+                    limparSelecao();
+
+                    return;
                 }
 
 
-                // =================================================
                 // TROCAR TURNO
-                // =================================================
 
                 turno =
                     turno === 'w'
@@ -1853,25 +2020,12 @@ for (
                         : 'w';
 
 
-                // =================================================
-                // ATUALIZAR XEQUE
-                // =================================================
-
                 atualizarXeque();
-
-
-                // =================================================
-                // VERIFICAR FIM DE JOGO
-                // =================================================
 
                 verificarFimDeJogo();
 
-
-                // =================================================
-                // LIMPAR SELEÇÃO
-                // =================================================
-
                 limparSelecao();
+
             }
         );
 
