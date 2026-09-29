@@ -1,12 +1,24 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
 #tabuleiro {
-    width: 640px;
-    height: 640px;
+    width: 100%;
+    max-width: 640px;
 
     display: grid;
     grid-template-columns: repeat(8, 1fr);
     grid-template-rows: repeat(8, 1fr);
 
     border: 2px solid black;
+    box-sizing: border-box;
 }
 
 .casa {
@@ -19,11 +31,11 @@
 }
 
 .clara {
-    background-color: #f0d9b5;
+    background-color: #ffffff;
 }
 
 .escura {
-    background-color: #b58863;
+    background-color: #dfbfd5;
 }
 
 .peca {
