@@ -13,17 +13,13 @@
 <body>
     <main class="jogo">
 
-        <!-- ==============================
-             TABULEIRO
-             ============================== -->
+        <!-- ============================== TABULEIRO ============================== -->
 
         <section class="tabuleiro-container">
             <div id="tabuleiro"></div>
         </section>
 
-        <!-- ==============================
-             HISTÓRICO DE JOGADAS
-             ============================== -->
+        <!-- ============================== HISTÓRICO DE JOGADAS ============================== -->
 
         <section id="historico">
             <div class="historico-titulo">
@@ -36,9 +32,7 @@
         </section>
     </main>
 
-    <!-- ==============================
-         PROMOÇÃO DE PEÃO
-         ============================== -->
+    <!-- ============================== PROMOÇÃO DE PEÃO ============================== -->
 
     <div id="promocao" class="promocao-overlay">
         <div class="promocao-caixa">
@@ -48,20 +42,14 @@
         </div>
     </div>
 
-    <!-- ==============================
-         BASE URL
-         ============================== -->
+    <!-- ============================== BASE URL ============================== -->
 
     <script>
         const baseUrl = "<?= base_url('/') ?>";
     </script>
 
-    <!-- ==============================
-         JAVASCRIPT
-         ============================== -->
+    <!-- ============================== JAVASCRIPT ============================== -->
 
-    <script
-        src="<?= base_url('js/xadrez.js') ?>"
-    ></script>
+    <script src="<?= base_url('js/xadrez.js') ?>" ></script>
 </body>
 </html>
