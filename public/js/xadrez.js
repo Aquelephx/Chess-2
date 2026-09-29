@@ -1,90 +1,87 @@
 const tabuleiro = document.getElementById('tabuleiro');
 
-const promocaoOverlay =
-    document.getElementById('promocao');
-
-const opcoesPromocao =
-    document.getElementById('opcoesPromocao');
-
+const promocaoOverlay = document.getElementById('promocao');
+const opcoesPromocao = document.getElementById('opcoesPromocao');
 
 const pecas = {
-
     pretas: [
-        'bR',
-        'bN',
-        'bB',
-        'bQ',
-        'bK',
-        'bB',
-        'bN',
-        'bR'
+        'bR', 'bN', 'bB', 'bQ',
+        'bK', 'bB', 'bN', 'bR'
     ],
 
     brancas: [
-        'wR',
-        'wN',
-        'wB',
-        'wQ',
-        'wK',
-        'wB',
-        'wN',
-        'wR'
+        'wR', 'wN', 'wB', 'wQ',
+        'wK', 'wB', 'wN', 'wR'
     ]
-
 };
 
-
 let casaSelecionada = null;
-
 let turno = 'w';
-
 let jogoEncerrado = false;
-
 let promocaoPendente = null;
 
+/*
+|--------------------------------------------------------------------------
+| ÚLTIMO MOVIMENTO
+|--------------------------------------------------------------------------
+*/
 
-// =====================================================
-// UTILITÁRIOS
-// =====================================================
+let ultimoMovimento = null;
+
+
+/*
+|--------------------------------------------------------------------------
+| LIMPAR SELEÇÃO
+|--------------------------------------------------------------------------
+*/
 
 function limparSelecao() {
 
-    document
-        .querySelectorAll('.casa')
-        .forEach(casa => {
+    document.querySelectorAll('.casa').forEach(casa => {
 
-            casa.classList.remove('selecionada');
-            casa.classList.remove('movimento');
-            casa.classList.remove('captura');
-            casa.classList.remove('roque');
+        casa.classList.remove('selecionada');
+        casa.classList.remove('movimento');
+        casa.classList.remove('captura');
 
-        });
+    });
 
     casaSelecionada = null;
 }
 
 
-function obterPeca(casa) {
+/*
+|--------------------------------------------------------------------------
+| OBTER PEÇA
+|--------------------------------------------------------------------------
+*/
+
+function obterPeca(linha, coluna) {
+
+    const casa = pegarCasa(linha, coluna);
 
     if (!casa) {
         return null;
     }
 
-    const imagem =
-        casa.querySelector('.peca');
+    const peca = casa.querySelector('.peca');
 
-    if (!imagem) {
+    if (!peca) {
         return null;
     }
 
-    return imagem.src
-        .split('/')
-        .pop()
-        .replace('.svg', '');
+    return peca.dataset.peca;
 }
 
 
-function obterElementoPeca(casa) {
+/*
+|--------------------------------------------------------------------------
+| OBTER ELEMENTO DA PEÇA
+|--------------------------------------------------------------------------
+*/
+
+function obterElementoPeca(linha, coluna) {
+
+    const casa = pegarCasa(linha, coluna);
 
     if (!casa) {
         return null;
@@ -94,44 +91,58 @@ function obterElementoPeca(casa) {
 }
 
 
-function corDaPeca(nomePeca) {
+/*
+|--------------------------------------------------------------------------
+| COR DA PEÇA
+|--------------------------------------------------------------------------
+*/
 
-    if (!nomePeca) {
+function corDaPeca(peca) {
+
+    if (!peca) {
         return null;
     }
 
-    return nomePeca.charAt(0);
+    return peca[0] === 'w' ? 'w' : 'b';
 }
 
 
-function tipoDaPeca(nomePeca) {
+/*
+|--------------------------------------------------------------------------
+| TIPO DA PEÇA
+|--------------------------------------------------------------------------
+*/
 
-    if (!nomePeca) {
+function tipoDaPeca(peca) {
+
+    if (!peca) {
         return null;
     }
 
-    return nomePeca.charAt(1);
+    return peca[1];
 }
 
+
+/*
+|--------------------------------------------------------------------------
+| COORDENADAS
+|--------------------------------------------------------------------------
+*/
 
 function coordenadas(casa) {
 
-    const casas =
-        [...document.querySelectorAll('.casa')];
-
-    const indice =
-        casas.indexOf(casa);
-
     return {
-
-        linha:
-            Math.floor(indice / 8),
-
-        coluna:
-            indice % 8
+        linha: parseInt(casa.dataset.linha),
+        coluna: parseInt(casa.dataset.coluna)
     };
 }
 
+
+/*
+|--------------------------------------------------------------------------
+| PEGAR CASA
+|--------------------------------------------------------------------------
+*/
 
 function pegarCasa(linha, coluna) {
 
@@ -144,66 +155,40 @@ function pegarCasa(linha, coluna) {
         return null;
     }
 
-    const casas =
-        document.querySelectorAll('.casa');
-
-    return casas[
-        linha * 8 + coluna
-    ];
+    return document.querySelector(
+        `.casa[data-linha="${linha}"][data-coluna="${coluna}"]`
+    );
 }
 
 
-// =====================================================
-// CAMINHO LIVRE
-// =====================================================
+/*
+|--------------------------------------------------------------------------
+| CAMINHO LIVRE
+|--------------------------------------------------------------------------
+*/
 
-function caminhoLivre(origem, destino) {
-
-    const origemCoord =
-        coordenadas(origem);
-
-    const destinoCoord =
-        coordenadas(destino);
-
-    const dl =
-        destinoCoord.linha -
-        origemCoord.linha;
-
-    const dc =
-        destinoCoord.coluna -
-        origemCoord.coluna;
+function caminhoLivre(
+    linhaOrigem,
+    colunaOrigem,
+    linhaDestino,
+    colunaDestino
+) {
 
     const passoLinha =
-        dl === 0
-            ? 0
-            : dl > 0
-                ? 1
-                : -1;
+        Math.sign(linhaDestino - linhaOrigem);
 
     const passoColuna =
-        dc === 0
-            ? 0
-            : dc > 0
-                ? 1
-                : -1;
+        Math.sign(colunaDestino - colunaOrigem);
 
-    let linha =
-        origemCoord.linha +
-        passoLinha;
-
-    let coluna =
-        origemCoord.coluna +
-        passoColuna;
+    let linha = linhaOrigem + passoLinha;
+    let coluna = colunaOrigem + passoColuna;
 
     while (
-        linha !== destinoCoord.linha ||
-        coluna !== destinoCoord.coluna
+        linha !== linhaDestino ||
+        coluna !== colunaDestino
     ) {
 
-        const casa =
-            pegarCasa(linha, coluna);
-
-        if (obterPeca(casa)) {
+        if (obterPeca(linha, coluna)) {
             return false;
         }
 
@@ -215,60 +200,54 @@ function caminhoLivre(origem, destino) {
 }
 
 
-// =====================================================
-// MOVIMENTOS DESLIZANTES
-// =====================================================
+/*
+|--------------------------------------------------------------------------
+| MOVIMENTOS DESLIZANTES
+|--------------------------------------------------------------------------
+*/
 
 function movimentosDeslizantes(
     linha,
     coluna,
-    cor,
     direcoes,
-    resultado
+    cor
 ) {
+
+    const movimentos = [];
 
     for (const [dl, dc] of direcoes) {
 
-        let novaLinha =
-            linha + dl;
-
-        let novaColuna =
-            coluna + dc;
+        let novaLinha = linha + dl;
+        let novaColuna = coluna + dc;
 
         while (
             novaLinha >= 0 &&
-            novaLinha < 8 &&
+            novaLinha <= 7 &&
             novaColuna >= 0 &&
-            novaColuna < 8
+            novaColuna <= 7
         ) {
 
-            const destino =
-                pegarCasa(
+            const pecaDestino =
+                obterPeca(novaLinha, novaColuna);
+
+            if (!pecaDestino) {
+
+                movimentos.push([
                     novaLinha,
                     novaColuna
-                );
-
-            const peca =
-                obterPeca(destino);
-
-            if (!peca) {
-
-                resultado.push(destino);
+                ]);
 
             } else {
 
-                const corDestino =
-                    corDaPeca(peca);
-
-                const tipoDestino =
-                    tipoDaPeca(peca);
-
                 if (
-                    corDestino !== cor &&
-                    tipoDestino !== 'K'
+                    corDaPeca(pecaDestino) !== cor &&
+                    tipoDaPeca(pecaDestino) !== 'K'
                 ) {
 
-                    resultado.push(destino);
+                    movimentos.push([
+                        novaLinha,
+                        novaColuna
+                    ]);
                 }
 
                 break;
@@ -278,217 +257,177 @@ function movimentosDeslizantes(
             novaColuna += dc;
         }
     }
+
+    return movimentos;
 }
 
 
-// =====================================================
-// CASA ATACADA
-// =====================================================
+/*
+|--------------------------------------------------------------------------
+| CASA ATACADA
+|--------------------------------------------------------------------------
+*/
 
 function casaAtacada(
-    casa,
+    linhaAlvo,
+    colunaAlvo,
     corAtacante
 ) {
 
-    if (!casa) {
-        return false;
-    }
+    for (let linha = 0; linha < 8; linha++) {
 
-    const casas =
-        document.querySelectorAll('.casa');
+        for (let coluna = 0; coluna < 8; coluna++) {
 
-    for (const origem of casas) {
+            const peca = obterPeca(linha, coluna);
 
-        const peca =
-            obterPeca(origem);
-
-        if (!peca) {
-            continue;
-        }
-
-        if (
-            corDaPeca(peca) !== corAtacante
-        ) {
-            continue;
-        }
-
-        const tipo =
-            tipoDaPeca(peca);
-
-        const origemCoord =
-            coordenadas(origem);
-
-        const destinoCoord =
-            coordenadas(casa);
-
-        const dl =
-            destinoCoord.linha -
-            origemCoord.linha;
-
-        const dc =
-            destinoCoord.coluna -
-            origemCoord.coluna;
-
-
-        // PEÃO
-
-        if (tipo === 'P') {
-
-            const direcao =
-                corAtacante === 'w'
-                    ? -1
-                    : 1;
-
-            if (
-                dl === direcao &&
-                Math.abs(dc) === 1
-            ) {
-                return true;
+            if (!peca) {
+                continue;
             }
 
-            continue;
-        }
-
-
-        // CAVALO
-
-        if (tipo === 'N') {
-
-            if (
-                (
-                    Math.abs(dl) === 2 &&
-                    Math.abs(dc) === 1
-                ) ||
-                (
-                    Math.abs(dl) === 1 &&
-                    Math.abs(dc) === 2
-                )
-            ) {
-                return true;
+            if (corDaPeca(peca) !== corAtacante) {
+                continue;
             }
 
-            continue;
-        }
+            const tipo = tipoDaPeca(peca);
 
+            /*
+            | PEÃO
+            */
 
-        // REI
+            if (tipo === 'P') {
 
-        if (tipo === 'K') {
-
-            if (
-                Math.abs(dl) <= 1 &&
-                Math.abs(dc) <= 1 &&
-                (
-                    dl !== 0 ||
-                    dc !== 0
-                )
-            ) {
-                return true;
-            }
-
-            continue;
-        }
-
-
-        // TORRE
-
-        if (tipo === 'R') {
-
-            if (
-                (
-                    dl === 0 ||
-                    dc === 0
-                ) &&
-                (
-                    dl !== 0 ||
-                    dc !== 0
-                )
-            ) {
+                const direcao =
+                    corAtacante === 'w' ? -1 : 1;
 
                 if (
-                    caminhoLivre(
-                        origem,
-                        casa
+                    linha + direcao === linhaAlvo &&
+                    (
+                        coluna - 1 === colunaAlvo ||
+                        coluna + 1 === colunaAlvo
                     )
                 ) {
                     return true;
                 }
+
+                continue;
             }
 
-            continue;
-        }
+
+            /*
+            | CAVALO
+            */
+
+            if (tipo === 'N') {
+
+                const movimentos = [
+                    [-2, -1],
+                    [-2, 1],
+                    [-1, -2],
+                    [-1, 2],
+                    [1, -2],
+                    [1, 2],
+                    [2, -1],
+                    [2, 1]
+                ];
+
+                for (const [dl, dc] of movimentos) {
+
+                    if (
+                        linha + dl === linhaAlvo &&
+                        coluna + dc === colunaAlvo
+                    ) {
+                        return true;
+                    }
+                }
+
+                continue;
+            }
 
 
-        // BISPO
+            /*
+            | REI
+            */
 
-        if (tipo === 'B') {
-
-            if (
-                Math.abs(dl) === Math.abs(dc) &&
-                dl !== 0
-            ) {
+            if (tipo === 'K') {
 
                 if (
-                    caminhoLivre(
-                        origem,
-                        casa
-                    )
+                    Math.abs(linha - linhaAlvo) <= 1 &&
+                    Math.abs(coluna - colunaAlvo) <= 1
                 ) {
                     return true;
                 }
+
+                continue;
             }
 
-            continue;
-        }
 
+            /*
+            | TORRE / BISPO / RAINHA
+            */
 
-        // DAMA
+            let direcoes = [];
 
-        if (tipo === 'Q') {
+            if (tipo === 'R') {
 
-            const movimentoReto =
-                dl === 0 ||
-                dc === 0;
+                direcoes = [
+                    [-1, 0],
+                    [1, 0],
+                    [0, -1],
+                    [0, 1]
+                ];
 
-            const movimentoDiagonal =
-                Math.abs(dl) === Math.abs(dc);
+            } else if (tipo === 'B') {
 
+                direcoes = [
+                    [-1, -1],
+                    [-1, 1],
+                    [1, -1],
+                    [1, 1]
+                ];
 
-            if (
-                movimentoReto &&
-                (
-                    dl !== 0 ||
-                    dc !== 0
-                )
-            ) {
+            } else if (tipo === 'Q') {
 
-                if (
-                    caminhoLivre(
-                        origem,
-                        casa
-                    )
+                direcoes = [
+                    [-1, 0],
+                    [1, 0],
+                    [0, -1],
+                    [0, 1],
+                    [-1, -1],
+                    [-1, 1],
+                    [1, -1],
+                    [1, 1]
+                ];
+            }
+
+            for (const [dl, dc] of direcoes) {
+
+                let novaLinha = linha + dl;
+                let novaColuna = coluna + dc;
+
+                while (
+                    novaLinha >= 0 &&
+                    novaLinha <= 7 &&
+                    novaColuna >= 0 &&
+                    novaColuna <= 7
                 ) {
-                    return true;
+
+                    if (
+                        novaLinha === linhaAlvo &&
+                        novaColuna === colunaAlvo
+                    ) {
+                        return true;
+                    }
+
+                    if (
+                        obterPeca(novaLinha, novaColuna)
+                    ) {
+                        break;
+                    }
+
+                    novaLinha += dl;
+                    novaColuna += dc;
                 }
             }
-
-
-            if (
-                movimentoDiagonal &&
-                dl !== 0
-            ) {
-
-                if (
-                    caminhoLivre(
-                        origem,
-                        casa
-                    )
-                ) {
-                    return true;
-                }
-            }
-
-            continue;
         }
     }
 
@@ -496,24 +435,31 @@ function casaAtacada(
 }
 
 
-// =====================================================
-// ENCONTRAR REI
-// =====================================================
+/*
+|--------------------------------------------------------------------------
+| ENCONTRAR REI
+|--------------------------------------------------------------------------
+*/
 
 function encontrarRei(cor) {
 
-    const casas =
-        document.querySelectorAll('.casa');
+    for (let linha = 0; linha < 8; linha++) {
 
-    for (const casa of casas) {
+        for (let coluna = 0; coluna < 8; coluna++) {
 
-        const peca =
-            obterPeca(casa);
+            const peca = obterPeca(linha, coluna);
 
-        if (
-            peca === cor + 'K'
-        ) {
-            return casa;
+            if (
+                peca &&
+                corDaPeca(peca) === cor &&
+                tipoDaPeca(peca) === 'K'
+            ) {
+
+                return {
+                    linha,
+                    coluna
+                };
+            }
         }
     }
 
@@ -521,185 +467,112 @@ function encontrarRei(cor) {
 }
 
 
-// =====================================================
-// REI EM XEQUE
-// =====================================================
+/*
+|--------------------------------------------------------------------------
+| ESTÁ EM XEQUE
+|--------------------------------------------------------------------------
+*/
 
 function estaEmXeque(cor) {
 
-    const rei =
-        encontrarRei(cor);
+    const rei = encontrarRei(cor);
 
     if (!rei) {
         return false;
     }
 
-    const inimigo =
-        cor === 'w'
-            ? 'b'
-            : 'w';
+    const adversario =
+        cor === 'w' ? 'b' : 'w';
 
     return casaAtacada(
-        rei,
-        inimigo
+        rei.linha,
+        rei.coluna,
+        adversario
     );
 }
 
 
-// =====================================================
-// ROQUE
-// =====================================================
+/*
+|--------------------------------------------------------------------------
+| ROQUE
+|--------------------------------------------------------------------------
+*/
 
 function podeFazerRoque(
-    casa,
-    cor,
-    lado
+    linha,
+    coluna,
+    destinoColuna
 ) {
 
     const rei =
-        obterElementoPeca(casa);
+        obterElementoPeca(linha, coluna);
 
     if (!rei) {
         return false;
     }
 
-    if (
-        tipoDaPeca(obterPeca(casa)) !== 'K'
-    ) {
+    if (rei.dataset.movido === 'true') {
         return false;
     }
 
-    if (
-        rei.dataset.moveu === 'true'
-    ) {
-        return false;
-    }
-
-    const {
-        linha,
-        coluna
-    } = coordenadas(casa);
-
-    const linhaInicial =
-        cor === 'w'
-            ? 7
-            : 0;
-
-    if (
-        linha !== linhaInicial ||
-        coluna !== 4
-    ) {
-        return false;
-    }
+    const cor =
+        corDaPeca(rei.dataset.peca);
 
     if (estaEmXeque(cor)) {
         return false;
     }
 
-    const inimigo =
-        cor === 'w'
-            ? 'b'
-            : 'w';
+    const ladoRei =
+        destinoColuna > coluna;
 
-    let colunaTorre;
-    let colunaDestino;
-    let colunaPassagem;
+    const colunaTorre =
+        ladoRei ? 7 : 0;
 
-
-    if (
-        lado === 'pequeno'
-    ) {
-
-        colunaTorre = 7;
-        colunaDestino = 6;
-        colunaPassagem = 5;
-
-    } else {
-
-        colunaTorre = 0;
-        colunaDestino = 2;
-        colunaPassagem = 3;
-    }
-
-
-    const casaTorre =
-        pegarCasa(
+    const torre =
+        obterElementoPeca(
             linha,
             colunaTorre
         );
 
-    if (!casaTorre) {
+    if (!torre) {
         return false;
     }
 
-    const nomeTorre =
-        obterPeca(casaTorre);
-
-    if (
-        nomeTorre !== cor + 'R'
-    ) {
+    if (torre.dataset.movido === 'true') {
         return false;
     }
 
-    const torre =
-        obterElementoPeca(casaTorre);
+    const inicio =
+        Math.min(coluna, colunaTorre);
 
-    if (
-        torre.dataset.moveu === 'true'
-    ) {
-        return false;
-    }
+    const fim =
+        Math.max(coluna, colunaTorre);
 
-
-    if (
-        lado === 'pequeno'
+    for (
+        let c = inicio + 1;
+        c < fim;
+        c++
     ) {
 
-        if (
-            obterPeca(
-                pegarCasa(linha, 5)
-            ) ||
-            obterPeca(
-                pegarCasa(linha, 6)
-            )
-        ) {
-            return false;
-        }
-
-    } else {
-
-        if (
-            obterPeca(
-                pegarCasa(linha, 1)
-            ) ||
-            obterPeca(
-                pegarCasa(linha, 2)
-            ) ||
-            obterPeca(
-                pegarCasa(linha, 3)
-            )
-        ) {
+        if (obterPeca(linha, c)) {
             return false;
         }
     }
 
+    const passo =
+        ladoRei ? 1 : -1;
 
     const casaPassagem =
-        pegarCasa(
-            linha,
-            colunaPassagem
-        );
+        coluna + passo;
 
-    const destino =
-        pegarCasa(
-            linha,
-            colunaDestino
-        );
+    const adversario =
+        cor === 'w' ? 'b' : 'w';
 
     if (
         casaAtacada(
+            linha,
             casaPassagem,
-            inimigo
+            adversario
         )
     ) {
         return false;
@@ -707,8 +580,9 @@ function podeFazerRoque(
 
     if (
         casaAtacada(
-            destino,
-            inimigo
+            linha,
+            destinoColuna,
+            adversario
         )
     ) {
         return false;
@@ -718,160 +592,188 @@ function podeFazerRoque(
 }
 
 
-// =====================================================
-// MOVIMENTOS BRUTOS
-// =====================================================
+/*
+|--------------------------------------------------------------------------
+| MOVIMENTOS BRUTOS
+|--------------------------------------------------------------------------
+*/
 
-function obterMovimentosBrutos(casa) {
+function obterMovimentosBrutos(
+    linha,
+    coluna
+) {
 
-    const nomePeca =
-        obterPeca(casa);
+    const peca = obterPeca(linha, coluna);
 
-    if (!nomePeca) {
+    if (!peca) {
         return [];
     }
 
-    const cor =
-        corDaPeca(nomePeca);
-
-    const tipo =
-        tipoDaPeca(nomePeca);
-
-    const {
-        linha,
-        coluna
-    } = coordenadas(casa);
+    const cor = corDaPeca(peca);
+    const tipo = tipoDaPeca(peca);
 
     const movimentos = [];
 
 
-    function adicionar(l, c) {
-
-        const destino =
-            pegarCasa(l, c);
-
-        if (!destino) {
-            return;
-        }
-
-        const pecaDestino =
-            obterPeca(destino);
-
-        if (!pecaDestino) {
-
-            movimentos.push(destino);
-            return;
-        }
-
-        if (
-            corDaPeca(pecaDestino) === cor
-        ) {
-            return;
-        }
-
-        if (
-            tipoDaPeca(pecaDestino) === 'K'
-        ) {
-            return;
-        }
-
-        movimentos.push(destino);
-    }
-
-
-    // PEÃO
+    /*
+    |--------------------------------------------------------------------------
+    | PEÃO
+    |--------------------------------------------------------------------------
+    */
 
     if (tipo === 'P') {
 
         const direcao =
-            cor === 'w'
-                ? -1
-                : 1;
+            cor === 'w' ? -1 : 1;
 
         const linhaInicial =
-            cor === 'w'
-                ? 6
-                : 1;
+            cor === 'w' ? 6 : 1;
 
-        const frente =
-            pegarCasa(
-                linha + direcao,
-                coluna
-            );
+        const proximaLinha =
+            linha + direcao;
+
+
+        /*
+        | UMA CASA
+        */
 
         if (
-            frente &&
-            !obterPeca(frente)
+            proximaLinha >= 0 &&
+            proximaLinha <= 7 &&
+            !obterPeca(proximaLinha, coluna)
         ) {
 
-            movimentos.push(frente);
+            movimentos.push([
+                proximaLinha,
+                coluna
+            ]);
+
+
+            /*
+            | DUAS CASAS
+            */
+
+            const segundaLinha =
+                linha + direcao * 2;
 
             if (
-                linha === linhaInicial
+                linha === linhaInicial &&
+                !obterPeca(segundaLinha, coluna)
             ) {
 
-                const frenteDois =
-                    pegarCasa(
-                        linha + direcao * 2,
-                        coluna
-                    );
-
-                if (
-                    frenteDois &&
-                    !obterPeca(frenteDois)
-                ) {
-                    movimentos.push(
-                        frenteDois
-                    );
-                }
+                movimentos.push([
+                    segundaLinha,
+                    coluna
+                ]);
             }
         }
 
 
-        for (
-            const dc of [-1, 1]
-        ) {
+        /*
+        | CAPTURA NORMAL
+        */
 
-            const destino =
-                pegarCasa(
-                    linha + direcao,
-                    coluna + dc
-                );
+        for (const dc of [-1, 1]) {
 
-            if (!destino) {
+            const novaColuna =
+                coluna + dc;
+
+            if (
+                novaColuna < 0 ||
+                novaColuna > 7 ||
+                proximaLinha < 0 ||
+                proximaLinha > 7
+            ) {
                 continue;
             }
 
             const pecaDestino =
-                obterPeca(destino);
-
-            if (!pecaDestino) {
-                continue;
-            }
-
-            if (
-                corDaPeca(pecaDestino) === cor
-            ) {
-                continue;
-            }
+                obterPeca(
+                    proximaLinha,
+                    novaColuna
+                );
 
             if (
-                tipoDaPeca(pecaDestino) === 'K'
+                pecaDestino &&
+                corDaPeca(pecaDestino) !== cor &&
+                tipoDaPeca(pecaDestino) !== 'K'
             ) {
-                continue;
-            }
 
-            movimentos.push(destino);
+                movimentos.push([
+                    proximaLinha,
+                    novaColuna
+                ]);
+            }
         }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | EN PASSANT
+        |--------------------------------------------------------------------------
+        */
+
+        if (ultimoMovimento) {
+
+            const origemUltimo =
+                ultimoMovimento.origem;
+
+            const destinoUltimo =
+                ultimoMovimento.destino;
+
+            const pecaUltimo =
+                ultimoMovimento.peca;
+
+            if (
+                pecaUltimo &&
+                tipoDaPeca(pecaUltimo) === 'P' &&
+                corDaPeca(pecaUltimo) !== cor &&
+                Math.abs(
+                    destinoUltimo.linha -
+                    origemUltimo.linha
+                ) === 2 &&
+                destinoUltimo.linha === linha &&
+                Math.abs(
+                    destinoUltimo.coluna -
+                    coluna
+                ) === 1
+            ) {
+
+                const casaDestinoEnPassant =
+                    pegarCasa(
+                        linha + direcao,
+                        destinoUltimo.coluna
+                    );
+
+                if (
+                    casaDestinoEnPassant &&
+                    !obterPeca(
+                        linha + direcao,
+                        destinoUltimo.coluna
+                    )
+                ) {
+
+                    movimentos.push([
+                        linha + direcao,
+                        destinoUltimo.coluna
+                    ]);
+                }
+            }
+        }
+
+        return movimentos;
     }
 
 
-    // CAVALO
+    /*
+    |--------------------------------------------------------------------------
+    | CAVALO
+    |--------------------------------------------------------------------------
+    */
 
     if (tipo === 'N') {
 
         const movimentosCavalo = [
-
             [-2, -1],
             [-2, 1],
             [-1, -2],
@@ -880,154 +782,216 @@ function obterMovimentosBrutos(casa) {
             [1, 2],
             [2, -1],
             [2, 1]
-
         ];
 
-        movimentosCavalo.forEach(
-            ([dl, dc]) => {
+        for (const [dl, dc] of movimentosCavalo) {
 
-                adicionar(
-                    linha + dl,
-                    coluna + dc
-                );
+            const novaLinha = linha + dl;
+            const novaColuna = coluna + dc;
+
+            if (
+                novaLinha < 0 ||
+                novaLinha > 7 ||
+                novaColuna < 0 ||
+                novaColuna > 7
+            ) {
+                continue;
             }
-        );
+
+            const destino =
+                obterPeca(
+                    novaLinha,
+                    novaColuna
+                );
+
+            if (
+                !destino ||
+                (
+                    corDaPeca(destino) !== cor &&
+                    tipoDaPeca(destino) !== 'K'
+                )
+            ) {
+
+                movimentos.push([
+                    novaLinha,
+                    novaColuna
+                ]);
+            }
+        }
+
+        return movimentos;
     }
 
 
-    // BISPO
+    /*
+    |--------------------------------------------------------------------------
+    | BISPO
+    |--------------------------------------------------------------------------
+    */
 
     if (tipo === 'B') {
 
-        movimentosDeslizantes(
+        return movimentosDeslizantes(
             linha,
             coluna,
-            cor,
             [
                 [-1, -1],
                 [-1, 1],
                 [1, -1],
                 [1, 1]
             ],
-            movimentos
+            cor
         );
     }
 
 
-    // TORRE
+    /*
+    |--------------------------------------------------------------------------
+    | TORRE
+    |--------------------------------------------------------------------------
+    */
 
     if (tipo === 'R') {
 
-        movimentosDeslizantes(
+        return movimentosDeslizantes(
             linha,
             coluna,
-            cor,
             [
                 [-1, 0],
                 [1, 0],
                 [0, -1],
                 [0, 1]
             ],
-            movimentos
+            cor
         );
     }
 
 
-    // DAMA
+    /*
+    |--------------------------------------------------------------------------
+    | RAINHA
+    |--------------------------------------------------------------------------
+    */
 
     if (tipo === 'Q') {
 
-        movimentosDeslizantes(
+        return movimentosDeslizantes(
             linha,
             coluna,
-            cor,
             [
-                [-1, -1],
-                [-1, 1],
-                [1, -1],
-                [1, 1],
                 [-1, 0],
                 [1, 0],
                 [0, -1],
-                [0, 1]
+                [0, 1],
+                [-1, -1],
+                [-1, 1],
+                [1, -1],
+                [1, 1]
             ],
-            movimentos
+            cor
         );
     }
 
 
-    // REI
+    /*
+    |--------------------------------------------------------------------------
+    | REI
+    |--------------------------------------------------------------------------
+    */
 
     if (tipo === 'K') {
 
-        for (
-            let dl = -1;
-            dl <= 1;
-            dl++
-        ) {
+        const movimentosRei = [
+            [-1, -1],
+            [-1, 0],
+            [-1, 1],
+            [0, -1],
+            [0, 1],
+            [1, -1],
+            [1, 0],
+            [1, 1]
+        ];
 
-            for (
-                let dc = -1;
-                dc <= 1;
-                dc++
+        for (const [dl, dc] of movimentosRei) {
+
+            const novaLinha = linha + dl;
+            const novaColuna = coluna + dc;
+
+            if (
+                novaLinha < 0 ||
+                novaLinha > 7 ||
+                novaColuna < 0 ||
+                novaColuna > 7
+            ) {
+                continue;
+            }
+
+            const destino =
+                obterPeca(
+                    novaLinha,
+                    novaColuna
+                );
+
+            if (
+                !destino ||
+                (
+                    corDaPeca(destino) !== cor &&
+                    tipoDaPeca(destino) !== 'K'
+                )
             ) {
 
-                if (
-                    dl === 0 &&
-                    dc === 0
-                ) {
-                    continue;
-                }
-
-                adicionar(
-                    linha + dl,
-                    coluna + dc
-                );
+                movimentos.push([
+                    novaLinha,
+                    novaColuna
+                ]);
             }
         }
 
 
-        if (
-            podeFazerRoque(
-                casa,
-                cor,
-                'pequeno'
-            )
-        ) {
-
-            movimentos.push(
-                pegarCasa(
-                    linha,
-                    coluna + 2
-                )
-            );
-        }
-
+        /*
+        | ROQUE
+        */
 
         if (
             podeFazerRoque(
-                casa,
-                cor,
-                'grande'
+                linha,
+                coluna,
+                coluna + 2
             )
         ) {
 
-            movimentos.push(
-                pegarCasa(
-                    linha,
-                    coluna - 2
-                )
-            );
+            movimentos.push([
+                linha,
+                coluna + 2
+            ]);
         }
+
+        if (
+            podeFazerRoque(
+                linha,
+                coluna,
+                coluna - 2
+            )
+        ) {
+
+            movimentos.push([
+                linha,
+                coluna - 2
+            ]);
+        }
+
+        return movimentos;
     }
 
     return movimentos;
 }
 
 
-// =====================================================
-// SIMULAR MOVIMENTO
-// =====================================================
+/*
+|--------------------------------------------------------------------------
+| SIMULAR MOVIMENTO
+|--------------------------------------------------------------------------
+*/
 
 function simularMovimento(
     origem,
@@ -1035,244 +999,376 @@ function simularMovimento(
 ) {
 
     const pecaOrigem =
-        obterElementoPeca(origem);
+        obterElementoPeca(
+            origem.linha,
+            origem.coluna
+        );
 
-    if (!pecaOrigem) {
+    const casaOrigem =
+        pegarCasa(
+            origem.linha,
+            origem.coluna
+        );
+
+    const casaDestino =
+        pegarCasa(
+            destino.linha,
+            destino.coluna
+        );
+
+    if (
+        !pecaOrigem ||
+        !casaOrigem ||
+        !casaDestino
+    ) {
         return null;
     }
 
-    const pecaDestino =
-        obterElementoPeca(destino);
 
-    const moveuAntes =
-        pecaOrigem.dataset.moveu;
+    /*
+    |--------------------------------------------------------------------------
+    | PEÇA CAPTURADA NORMALMENTE
+    |--------------------------------------------------------------------------
+    */
 
-    const estado = {
-
-        origem,
-        destino,
-        pecaOrigem,
-        pecaDestino,
-        moveuAntes
-
-    };
+    const pecaCapturada =
+        casaDestino.querySelector('.peca');
 
 
-    if (pecaDestino) {
-        pecaDestino.remove();
+    /*
+    |--------------------------------------------------------------------------
+    | EN PASSANT NA SIMULAÇÃO
+    |--------------------------------------------------------------------------
+    */
+
+    let pecaCapturadaEnPassant = null;
+    let casaCapturadaEnPassant = null;
+
+
+    if (
+        tipoDaPeca(pecaOrigem.dataset.peca) === 'P' &&
+        origem.coluna !== destino.coluna &&
+        !pecaCapturada
+    ) {
+
+        casaCapturadaEnPassant =
+            pegarCasa(
+                origem.linha,
+                destino.coluna
+            );
+
+        if (casaCapturadaEnPassant) {
+
+            const possivelPeao =
+                casaCapturadaEnPassant.querySelector('.peca');
+
+            if (
+                possivelPeao &&
+                tipoDaPeca(
+                    possivelPeao.dataset.peca
+                ) === 'P'
+            ) {
+
+                pecaCapturadaEnPassant =
+                    possivelPeao;
+
+                casaCapturadaEnPassant.removeChild(
+                    pecaCapturadaEnPassant
+                );
+            }
+        }
     }
 
-    destino.appendChild(
+
+    /*
+    |--------------------------------------------------------------------------
+    | REMOVER CAPTURA NORMAL
+    |--------------------------------------------------------------------------
+    */
+
+    if (pecaCapturada) {
+
+        casaDestino.removeChild(
+            pecaCapturada
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | MOVER
+    |--------------------------------------------------------------------------
+    */
+
+    casaDestino.appendChild(
         pecaOrigem
     );
 
-    return estado;
+
+    return {
+        pecaOrigem,
+        pecaCapturada,
+        casaOrigem,
+        casaDestino,
+        pecaCapturadaEnPassant,
+        casaCapturadaEnPassant
+    };
 }
 
 
-// =====================================================
-// DESFAZER SIMULAÇÃO
-// =====================================================
+/*
+|--------------------------------------------------------------------------
+| DESFAZER SIMULAÇÃO
+|--------------------------------------------------------------------------
+*/
 
-function desfazerMovimento(estado) {
+function desfazerMovimento(simulacao) {
 
-    estado.origem.appendChild(
-        estado.pecaOrigem
+    if (!simulacao) {
+        return;
+    }
+
+    const {
+        pecaOrigem,
+        pecaCapturada,
+        casaOrigem,
+        casaDestino,
+        pecaCapturadaEnPassant,
+        casaCapturadaEnPassant
+    } = simulacao;
+
+
+    /*
+    | Voltar peça para origem
+    */
+
+    casaOrigem.appendChild(
+        pecaOrigem
     );
 
-    estado.pecaOrigem.dataset.moveu =
-        estado.moveuAntes;
+
+    /*
+    | Restaurar captura normal
+    */
+
+    if (pecaCapturada) {
+
+        casaDestino.appendChild(
+            pecaCapturada
+        );
+    }
+
+
+    /*
+    | Restaurar captura en passant
+    */
 
     if (
-        estado.pecaDestino
+        pecaCapturadaEnPassant &&
+        casaCapturadaEnPassant
     ) {
 
-        estado.destino.appendChild(
-            estado.pecaDestino
+        casaCapturadaEnPassant.appendChild(
+            pecaCapturadaEnPassant
         );
     }
 }
 
 
-// =====================================================
-// MOVIMENTOS LEGAIS
-// =====================================================
+/*
+|--------------------------------------------------------------------------
+| MOVIMENTOS LEGAIS
+|--------------------------------------------------------------------------
+*/
 
-function movimentosLegais(casa) {
+function movimentosLegais(
+    linha,
+    coluna
+) {
 
-    const nomePeca =
-        obterPeca(casa);
+    const peca =
+        obterPeca(linha, coluna);
 
-    if (!nomePeca) {
+    if (!peca) {
         return [];
     }
 
     const cor =
-        corDaPeca(nomePeca);
-
-    const tipo =
-        tipoDaPeca(nomePeca);
+        corDaPeca(peca);
 
     const movimentosBrutos =
-        obterMovimentosBrutos(casa);
+        obterMovimentosBrutos(
+            linha,
+            coluna
+        );
 
-    const movimentos = [];
+    const movimentosLegais = [];
 
+    for (const [destinoLinha, destinoColuna] of movimentosBrutos) {
 
-    for (
-        const destino of movimentosBrutos
-    ) {
-
-        const origemCoord =
-            coordenadas(casa);
-
-        const destinoCoord =
-            coordenadas(destino);
-
+        /*
+        | ROQUE
+        */
 
         if (
-            tipo === 'K' &&
+            tipoDaPeca(peca) === 'K' &&
             Math.abs(
-                destinoCoord.coluna -
-                origemCoord.coluna
+                destinoColuna - coluna
             ) === 2
         ) {
 
-            movimentos.push(destino);
+            movimentosLegais.push([
+                destinoLinha,
+                destinoColuna
+            ]);
+
             continue;
         }
 
 
-        const estado =
+        const simulacao =
             simularMovimento(
-                casa,
-                destino
+                {
+                    linha,
+                    coluna
+                },
+                {
+                    linha: destinoLinha,
+                    coluna: destinoColuna
+                }
             );
 
-        if (!estado) {
+        if (!simulacao) {
             continue;
         }
 
-
-        const reiAindaEmXeque =
+        const emXeque =
             estaEmXeque(cor);
 
+        desfazerMovimento(simulacao);
 
-        desfazerMovimento(
-            estado
-        );
+        if (!emXeque) {
 
-
-        if (!reiAindaEmXeque) {
-
-            movimentos.push(
-                destino
-            );
+            movimentosLegais.push([
+                destinoLinha,
+                destinoColuna
+            ]);
         }
     }
 
-    return movimentos;
+    return movimentosLegais;
 }
 
 
-// =====================================================
-// MOSTRAR MOVIMENTOS
-// =====================================================
+/*
+|--------------------------------------------------------------------------
+| MOSTRAR MOVIMENTOS
+|--------------------------------------------------------------------------
+*/
 
-function mostrarMovimentos(casa) {
+function mostrarMovimentos(
+    linha,
+    coluna
+) {
 
     const movimentos =
-        movimentosLegais(casa);
+        movimentosLegais(
+            linha,
+            coluna
+        );
 
-    const nomePeca =
-        obterPeca(casa);
+    const casaOrigem =
+        pegarCasa(
+            linha,
+            coluna
+        );
 
-    if (!nomePeca) {
+    if (!casaOrigem) {
         return;
     }
 
-    const cor =
-        corDaPeca(nomePeca);
+    casaOrigem.classList.add(
+        'selecionada'
+    );
 
-    const colunaOrigem =
-        coordenadas(casa).coluna;
+    for (const [l, c] of movimentos) {
 
+        const casa =
+            pegarCasa(l, c);
 
-    for (
-        const destino of movimentos
-    ) {
+        if (!casa) {
+            continue;
+        }
 
-        const pecaDestino =
-            obterPeca(destino);
-
-        destino.classList.add(
+        casa.classList.add(
             'movimento'
         );
 
+        /*
+        | Captura normal
+        */
 
-        if (
-            pecaDestino &&
-            corDaPeca(pecaDestino) !== cor
-        ) {
+        if (obterPeca(l, c)) {
 
-            destino.classList.add(
+            casa.classList.add(
                 'captura'
             );
         }
 
 
-        const colunaDestino =
-            coordenadas(destino).coluna;
+        /*
+        | Captura en passant
+        */
+
+        const pecaOrigem =
+            obterPeca(linha, coluna);
 
         if (
-            tipoDaPeca(nomePeca) === 'K' &&
-            Math.abs(
-                colunaDestino -
-                colunaOrigem
-            ) === 2
+            tipoDaPeca(pecaOrigem) === 'P' &&
+            coluna !== c &&
+            !obterPeca(l, c)
         ) {
 
-            destino.classList.add(
-                'roque'
+            casa.classList.add(
+                'captura'
             );
         }
     }
 }
 
 
-// =====================================================
-// EXISTEM MOVIMENTOS
-// =====================================================
+/*
+|--------------------------------------------------------------------------
+| EXISTEM MOVIMENTOS
+|--------------------------------------------------------------------------
+*/
 
 function existemMovimentos(cor) {
 
-    const casas =
-        document.querySelectorAll('.casa');
+    for (let linha = 0; linha < 8; linha++) {
 
-    for (
-        const casa of casas
-    ) {
+        for (let coluna = 0; coluna < 8; coluna++) {
 
-        const peca =
-            obterPeca(casa);
+            const peca =
+                obterPeca(linha, coluna);
 
-        if (!peca) {
-            continue;
-        }
+            if (!peca) {
+                continue;
+            }
 
-        if (
-            corDaPeca(peca) !== cor
-        ) {
-            continue;
-        }
+            if (corDaPeca(peca) !== cor) {
+                continue;
+            }
 
-        const movimentos =
-            movimentosLegais(casa);
+            if (
+                movimentosLegais(
+                    linha,
+                    coluna
+                ).length > 0
+            ) {
 
-        if (
-            movimentos.length > 0
-        ) {
-            return true;
+                return true;
+            }
         }
     }
 
@@ -1280,9 +1376,11 @@ function existemMovimentos(cor) {
 }
 
 
-// =====================================================
-// ATUALIZAR XEQUE
-// =====================================================
+/*
+|--------------------------------------------------------------------------
+| ATUALIZAR XEQUE
+|--------------------------------------------------------------------------
+*/
 
 function atualizarXeque() {
 
@@ -1296,201 +1394,148 @@ function atualizarXeque() {
 
         });
 
+    for (const cor of ['w', 'b']) {
 
-    const reiBranco =
-        encontrarRei('w');
+        if (estaEmXeque(cor)) {
 
-    const reiPreto =
-        encontrarRei('b');
+            const rei =
+                encontrarRei(cor);
 
+            if (rei) {
 
-    if (
-        reiBranco &&
-        estaEmXeque('w')
-    ) {
+                const casaRei =
+                    pegarCasa(
+                        rei.linha,
+                        rei.coluna
+                    );
 
-        reiBranco.classList.add(
-            'xeque'
-        );
-    }
+                if (casaRei) {
 
-
-    if (
-        reiPreto &&
-        estaEmXeque('b')
-    ) {
-
-        reiPreto.classList.add(
-            'xeque'
-        );
+                    casaRei.classList.add(
+                        'xeque'
+                    );
+                }
+            }
+        }
     }
 }
 
 
-// =====================================================
-// FIM DE JOGO
-// =====================================================
+/*
+|--------------------------------------------------------------------------
+| VERIFICAR FIM DE JOGO
+|--------------------------------------------------------------------------
+*/
 
 function verificarFimDeJogo() {
 
-    const emXeque =
-        estaEmXeque(turno);
+    if (existemMovimentos(turno)) {
+        return;
+    }
 
-    const temMovimentos =
-        existemMovimentos(turno);
+    jogoEncerrado = true;
 
-
-    if (
-        emXeque &&
-        !temMovimentos
-    ) {
-
-        jogoEncerrado = true;
+    if (estaEmXeque(turno)) {
 
         const vencedor =
             turno === 'w'
                 ? 'Pretas'
                 : 'Brancas';
 
-        atualizarXeque();
-
         alert(
-            `Xeque-mate! ${vencedor} venceram.`
+            `Xeque-mate! ${vencedor} venceu.`
         );
 
-        return;
-    }
-
-
-    if (
-        !emXeque &&
-        !temMovimentos
-    ) {
-
-        jogoEncerrado = true;
+    } else {
 
         alert(
-            'Afogamento! Empate.'
+            'Empate por afogamento!'
         );
-
-        return;
     }
 }
 
 
-// =====================================================
-// ABRIR PROMOÇÃO
-// =====================================================
+/*
+|--------------------------------------------------------------------------
+| PROMOÇÃO
+|--------------------------------------------------------------------------
+*/
 
 function abrirPromocao(casa) {
 
-    const nomePeca =
-        obterPeca(casa);
+    const peca =
+        casa.querySelector('.peca');
 
-    if (!nomePeca) {
+    if (!peca) {
         return;
     }
 
-    if (
-        tipoDaPeca(nomePeca) !== 'P'
-    ) {
+    const tipo =
+        tipoDaPeca(peca.dataset.peca);
+
+    if (tipo !== 'P') {
         return;
     }
-
-    const cor =
-        corDaPeca(nomePeca);
 
     const { linha } =
         coordenadas(casa);
 
-
     if (
-        cor === 'w' &&
-        linha !== 0
-    ) {
-        return;
-    }
-
-    if (
-        cor === 'b' &&
+        linha !== 0 &&
         linha !== 7
     ) {
         return;
     }
 
-
     promocaoPendente = casa;
 
     opcoesPromocao.innerHTML = '';
 
+    const cor =
+        corDaPeca(peca.dataset.peca);
 
     const opcoes = [
-        {
-            tipo: 'Q',
-            nome: 'Dama'
-        },
-        {
-            tipo: 'R',
-            nome: 'Torre'
-        },
-        {
-            tipo: 'B',
-            nome: 'Bispo'
-        },
-        {
-            tipo: 'N',
-            nome: 'Cavalo'
-        }
+        'Q',
+        'R',
+        'B',
+        'N'
     ];
 
-
-    opcoes.forEach(opcao => {
+    for (const tipoPromocao of opcoes) {
 
         const botao =
             document.createElement('button');
 
-        botao.classList.add(
-            'opcao-promocao'
-        );
-
-        botao.type = 'button';
-
-        botao.title =
-            opcao.nome;
-
+        botao.className =
+            'opcao-promocao';
 
         const imagem =
             document.createElement('img');
 
+        const nomePeca =
+            cor + tipoPromocao;
+
         imagem.src =
-            `${baseUrl}img/pecas/${cor}${opcao.tipo}.svg`;
+            `${baseUrl}img/pecas/${nomePeca}.svg`;
 
         imagem.alt =
-            opcao.nome;
+            nomePeca;
 
-
-        botao.appendChild(
-            imagem
-        );
-
+        botao.appendChild(imagem);
 
         botao.addEventListener(
             'click',
             () => {
-
                 escolherPromocao(
-                    opcao.tipo
+                    tipoPromocao
                 );
-
             }
         );
-
 
         opcoesPromocao.appendChild(
             botao
         );
-    });
-
+    }
 
     promocaoOverlay.classList.add(
         'ativa'
@@ -1498,9 +1543,11 @@ function abrirPromocao(casa) {
 }
 
 
-// =====================================================
-// ESCOLHER PROMOÇÃO
-// =====================================================
+/*
+|--------------------------------------------------------------------------
+| ESCOLHER PROMOÇÃO
+|--------------------------------------------------------------------------
+*/
 
 function escolherPromocao(tipo) {
 
@@ -1512,35 +1559,31 @@ function escolherPromocao(tipo) {
         promocaoPendente;
 
     const peca =
-        obterElementoPeca(casa);
+        casa.querySelector('.peca');
 
     if (!peca) {
+
         fecharPromocao();
+
         return;
     }
 
-    const nomeAtual =
-        obterPeca(casa);
-
     const cor =
-        corDaPeca(nomeAtual);
+        corDaPeca(peca.dataset.peca);
 
-    const novaPeca =
-        `${cor}${tipo}`;
+    const nomePeca =
+        cor + tipo;
 
+    peca.dataset.peca =
+        nomePeca;
 
     peca.src =
-        `${baseUrl}img/pecas/${novaPeca}.svg`;
+        `${baseUrl}img/pecas/${nomePeca}.svg`;
 
-    peca.dataset.moveu =
+    peca.dataset.movido =
         'true';
 
-
     fecharPromocao();
-
-
-    // Agora que a promoção terminou,
-    // atualizamos o estado do jogo.
 
     turno =
         turno === 'w'
@@ -1555,9 +1598,11 @@ function escolherPromocao(tipo) {
 }
 
 
-// =====================================================
-// FECHAR PROMOÇÃO
-// =====================================================
+/*
+|--------------------------------------------------------------------------
+| FECHAR PROMOÇÃO
+|--------------------------------------------------------------------------
+*/
 
 function fecharPromocao() {
 
@@ -1571,9 +1616,11 @@ function fecharPromocao() {
 }
 
 
-// =====================================================
-// MOVER PEÇA
-// =====================================================
+/*
+|--------------------------------------------------------------------------
+| MOVER PEÇA
+|--------------------------------------------------------------------------
+*/
 
 function moverPeca(
     origem,
@@ -1581,464 +1628,560 @@ function moverPeca(
 ) {
 
     const peca =
-        obterElementoPeca(origem);
+        obterElementoPeca(
+            origem.linha,
+            origem.coluna
+        );
 
-    if (!peca) {
+    const casaOrigem =
+        pegarCasa(
+            origem.linha,
+            origem.coluna
+        );
+
+    const casaDestino =
+        pegarCasa(
+            destino.linha,
+            destino.coluna
+        );
+
+    if (
+        !peca ||
+        !casaOrigem ||
+        !casaDestino
+    ) {
         return false;
     }
 
-    const pecaDestino =
-        obterElementoPeca(destino);
+    const nomePeca =
+        peca.dataset.peca;
+
+    const tipo =
+        tipoDaPeca(nomePeca);
+
+    let capturaEnPassant = false;
 
 
-    if (pecaDestino) {
-        pecaDestino.remove();
+    /*
+    |--------------------------------------------------------------------------
+    | EN PASSANT
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        tipo === 'P' &&
+        origem.coluna !== destino.coluna &&
+        !obterPeca(
+            destino.linha,
+            destino.coluna
+        )
+    ) {
+
+        const casaPeao =
+            pegarCasa(
+                origem.linha,
+                destino.coluna
+            );
+
+        if (casaPeao) {
+
+            const peaoCapturado =
+                casaPeao.querySelector('.peca');
+
+            if (
+                peaoCapturado &&
+                tipoDaPeca(
+                    peaoCapturado.dataset.peca
+                ) === 'P' &&
+                corDaPeca(
+                    peaoCapturado.dataset.peca
+                ) !== corDaPeca(nomePeca)
+            ) {
+
+                casaPeao.removeChild(
+                    peaoCapturado
+                );
+
+                capturaEnPassant = true;
+            }
+        }
     }
 
 
-    destino.appendChild(
+    /*
+    |--------------------------------------------------------------------------
+    | CAPTURA NORMAL
+    |--------------------------------------------------------------------------
+    */
+
+    const pecaCapturada =
+        casaDestino.querySelector('.peca');
+
+    if (pecaCapturada) {
+
+        casaDestino.removeChild(
+            pecaCapturada
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | MOVER PEÇA
+    |--------------------------------------------------------------------------
+    */
+
+    casaDestino.appendChild(
         peca
     );
 
-    peca.dataset.moveu =
+    peca.dataset.movido =
         'true';
 
 
-    const nomePeca =
-        obterPeca(destino);
+    /*
+    |--------------------------------------------------------------------------
+    | SALVAR ÚLTIMO MOVIMENTO
+    |--------------------------------------------------------------------------
+    */
+
+    ultimoMovimento = {
+
+        origem: {
+            linha: origem.linha,
+            coluna: origem.coluna
+        },
+
+        destino: {
+            linha: destino.linha,
+            coluna: destino.coluna
+        },
+
+        peca: nomePeca,
+
+        capturaEnPassant
+    };
 
 
-    // =================================================
-    // PROMOÇÃO
-    // =================================================
+    /*
+    |--------------------------------------------------------------------------
+    | PROMOÇÃO
+    |--------------------------------------------------------------------------
+    */
 
     if (
-        tipoDaPeca(nomePeca) === 'P'
+        tipo === 'P' &&
+        (
+            destino.linha === 0 ||
+            destino.linha === 7
+        )
     ) {
 
-        const cor =
-            corDaPeca(nomePeca);
+        abrirPromocao(
+            casaDestino
+        );
 
-        const { linha } =
-            coordenadas(destino);
-
-        const chegouNoFim =
-            (
-                cor === 'w' &&
-                linha === 0
-            ) ||
-            (
-                cor === 'b' &&
-                linha === 7
-            );
+        return 'promocao';
+    }
 
 
-        if (chegouNoFim) {
+    /*
+    |--------------------------------------------------------------------------
+    | ROQUE
+    |--------------------------------------------------------------------------
+    */
 
-            abrirPromocao(destino);
+    if (
+        tipo === 'K' &&
+        Math.abs(
+            destino.coluna -
+            origem.coluna
+        ) === 2
+    ) {
 
-            return 'promocao';
-        }
+        fazerRoque(
+            origem,
+            destino
+        );
     }
 
     return true;
 }
 
 
-// =====================================================
-// FAZER ROQUE
-// =====================================================
+/*
+|--------------------------------------------------------------------------
+| FAZER ROQUE
+|--------------------------------------------------------------------------
+*/
 
 function fazerRoque(
-    rei,
+    origem,
     destino
 ) {
 
-    const origemCoord =
-        coordenadas(rei);
+    const linha =
+        origem.linha;
 
-    const destinoCoord =
-        coordenadas(destino);
+    const ladoRei =
+        destino.coluna >
+        origem.coluna;
 
-    const diferenca =
-        destinoCoord.coluna -
-        origemCoord.coluna;
+    const colunaTorreOrigem =
+        ladoRei ? 7 : 0;
 
+    const colunaTorreDestino =
+        ladoRei ? 5 : 3;
+
+    const torre =
+        obterElementoPeca(
+            linha,
+            colunaTorreOrigem
+        );
+
+    const casaTorreDestino =
+        pegarCasa(
+            linha,
+            colunaTorreDestino
+        );
 
     if (
-        diferenca === 2
+        torre &&
+        casaTorreDestino
     ) {
 
-        const casaTorre =
-            pegarCasa(
-                origemCoord.linha,
-                7
-            );
-
-        const destinoTorre =
-            pegarCasa(
-                origemCoord.linha,
-                5
-            );
-
-        moverPeca(
-            casaTorre,
-            destinoTorre
+        casaTorreDestino.appendChild(
+            torre
         );
+
+        torre.dataset.movido =
+            'true';
     }
+}
 
 
-    else if (
-        diferenca === -2
-    ) {
+/*
+|--------------------------------------------------------------------------
+| CRIAR TABULEIRO
+|--------------------------------------------------------------------------
+*/
 
-        const casaTorre =
-            pegarCasa(
-                origemCoord.linha,
-                0
+function criarTabuleiro() {
+
+    tabuleiro.innerHTML = '';
+
+    for (let linha = 0; linha < 8; linha++) {
+
+        for (let coluna = 0; coluna < 8; coluna++) {
+
+            const casa =
+                document.createElement('div');
+
+            casa.classList.add(
+                'casa'
             );
 
-        const destinoTorre =
-            pegarCasa(
-                origemCoord.linha,
-                3
+            if (
+                (linha + coluna) % 2 === 0
+            ) {
+
+                casa.classList.add(
+                    'clara'
+                );
+
+            } else {
+
+                casa.classList.add(
+                    'escura'
+                );
+            }
+
+            casa.dataset.linha =
+                linha;
+
+            casa.dataset.coluna =
+                coluna;
+
+
+            /*
+            | PRETAS
+            */
+
+            if (linha === 0) {
+
+                criarPeca(
+                    casa,
+                    pecas.pretas[coluna]
+                );
+            }
+
+
+            /*
+            | PEÕES PRETOS
+            */
+
+            if (linha === 1) {
+
+                criarPeca(
+                    casa,
+                    'bP'
+                );
+            }
+
+
+            /*
+            | PEÕES BRANCOS
+            */
+
+            if (linha === 6) {
+
+                criarPeca(
+                    casa,
+                    'wP'
+                );
+            }
+
+
+            /*
+            | BRANCAS
+            */
+
+            if (linha === 7) {
+
+                criarPeca(
+                    casa,
+                    pecas.brancas[coluna]
+                );
+            }
+
+            tabuleiro.appendChild(
+                casa
             );
-
-        moverPeca(
-            casaTorre,
-            destinoTorre
-        );
+        }
     }
+}
 
 
-    moverPeca(
-        rei,
-        destino
+/*
+|--------------------------------------------------------------------------
+| CRIAR PEÇA
+|--------------------------------------------------------------------------
+*/
+
+function criarPeca(
+    casa,
+    nomePeca
+) {
+
+    const imagem =
+        document.createElement('img');
+
+    imagem.classList.add(
+        'peca'
+    );
+
+    imagem.src =
+        `${baseUrl}img/pecas/${nomePeca}.svg`;
+
+    imagem.alt =
+        nomePeca;
+
+    imagem.dataset.peca =
+        nomePeca;
+
+    imagem.dataset.movido =
+        'false';
+
+    casa.appendChild(
+        imagem
     );
 }
 
 
-// =====================================================
-// CRIAR TABULEIRO
-// =====================================================
+/*
+|--------------------------------------------------------------------------
+| CLIQUE NO TABULEIRO
+|--------------------------------------------------------------------------
+*/
 
-for (
-    let linha = 0;
-    linha < 8;
-    linha++
-) {
+tabuleiro.addEventListener(
+    'click',
+    function (event) {
 
-    for (
-        let coluna = 0;
-        coluna < 8;
-        coluna++
-    ) {
+        if (jogoEncerrado) {
+            return;
+        }
+
+        if (promocaoPendente) {
+            return;
+        }
 
         const casa =
-            document.createElement('div');
+            event.target.closest('.casa');
 
-        casa.classList.add(
-            'casa'
-        );
-
-
-        // COR DA CASA
-
-        if (
-            (linha + coluna) % 2 === 0
-        ) {
-
-            casa.classList.add(
-                'clara'
-            );
-
-        } else {
-
-            casa.classList.add(
-                'escura'
-            );
+        if (!casa) {
+            return;
         }
 
-
-        let nomePeca = null;
-
-
-        // PRETAS
-
-        if (
-            linha === 0
-        ) {
-
-            nomePeca =
-                pecas.pretas[coluna];
-        }
-
-
-        // PEÕES PRETOS
-
-        if (
-            linha === 1
-        ) {
-
-            nomePeca = 'bP';
-        }
-
-
-        // PEÕES BRANCOS
-
-        if (
-            linha === 6
-        ) {
-
-            nomePeca = 'wP';
-        }
-
-
-        // BRANCAS
-
-        if (
-            linha === 7
-        ) {
-
-            nomePeca =
-                pecas.brancas[coluna];
-        }
-
-
-        // CRIAR IMAGEM
-
-        if (nomePeca) {
-
-            const imagem =
-                document.createElement('img');
-
-            imagem.src =
-                `${baseUrl}img/pecas/${nomePeca}.svg`;
-
-            imagem.classList.add(
-                'peca'
-            );
-
-            imagem.dataset.moveu =
-                'false';
-
-            casa.appendChild(
-                imagem
-            );
-        }
-
-
-        // CLIQUE
-
-        casa.addEventListener(
-            'click',
-            () => {
-
-                if (
-                    jogoEncerrado
-                ) {
-                    return;
-                }
-
-
-                // Não deixa mexer enquanto
-                // a promoção está aberta.
-
-                if (
-                    promocaoPendente
-                ) {
-                    return;
-                }
-
-
-                // PRIMEIRO CLIQUE
-
-                if (
-                    casaSelecionada === null
-                ) {
-
-                    const nomePeca =
-                        obterPeca(casa);
-
-                    if (!nomePeca) {
-                        return;
-                    }
-
-                    const cor =
-                        corDaPeca(nomePeca);
-
-                    if (
-                        cor !== turno
-                    ) {
-                        return;
-                    }
-
-                    casaSelecionada =
-                        casa;
-
-                    casa.classList.add(
-                        'selecionada'
-                    );
-
-                    mostrarMovimentos(
-                        casa
-                    );
-
-                    return;
-                }
-
-
-                // MESMA CASA
-
-                if (
-                    casa === casaSelecionada
-                ) {
-
-                    limparSelecao();
-                    return;
-                }
-
-
-                // OUTRA PEÇA DO MESMO JOGADOR
-
-                const pecaClicada =
-                    obterPeca(casa);
-
-                if (
-                    pecaClicada &&
-                    corDaPeca(
-                        pecaClicada
-                    ) === turno
-                ) {
-
-                    limparSelecao();
-
-                    casaSelecionada =
-                        casa;
-
-                    casa.classList.add(
-                        'selecionada'
-                    );
-
-                    mostrarMovimentos(
-                        casa
-                    );
-
-                    return;
-                }
-
-
-                // MOVIMENTOS PERMITIDOS
-
-                const movimentosPermitidos =
-                    movimentosLegais(
-                        casaSelecionada
-                    );
-
-                if (
-                    !movimentosPermitidos.includes(
-                        casa
-                    )
-                ) {
-                    return;
-                }
-
-
-                const origem =
-                    casaSelecionada;
-
-                const peca =
-                    obterElementoPeca(
-                        origem
-                    );
-
-                if (!peca) {
-
-                    limparSelecao();
-                    return;
-                }
-
-
-                // ROQUE
-
-                if (
-                    casa.classList.contains(
-                        'roque'
-                    )
-                ) {
-
-                    fazerRoque(
-                        origem,
-                        casa
-                    );
-
-                    turno =
-                        turno === 'w'
-                            ? 'b'
-                            : 'w';
-
-                    atualizarXeque();
-
-                    verificarFimDeJogo();
-
-                    limparSelecao();
-
-                    return;
-                }
-
-
-                // MOVIMENTO NORMAL
-
-                const resultado =
-                    moverPeca(
-                        origem,
-                        casa
-                    );
-
-
-                // Promoção:
-                // NÃO troca o turno ainda.
-                //
-                // O turno só muda quando o jogador
-                // escolher a peça.
-
-                if (
-                    resultado === 'promocao'
-                ) {
-
-                    limparSelecao();
-
-                    return;
-                }
-
-
-                // TROCAR TURNO
-
-                turno =
-                    turno === 'w'
-                        ? 'b'
-                        : 'w';
-
-
-                atualizarXeque();
-
-                verificarFimDeJogo();
-
-                limparSelecao();
-
+        const { linha, coluna } =
+            coordenadas(casa);
+
+        const peca =
+            obterPeca(linha, coluna);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | NENHUMA PEÇA SELECIONADA
+        |--------------------------------------------------------------------------
+        */
+
+        if (!casaSelecionada) {
+
+            if (
+                peca &&
+                corDaPeca(peca) === turno
+            ) {
+
+                casaSelecionada = {
+                    linha,
+                    coluna
+                };
+
+                mostrarMovimentos(
+                    linha,
+                    coluna
+                );
             }
-        );
+
+            return;
+        }
 
 
-        tabuleiro.appendChild(
-            casa
-        );
+        /*
+        |--------------------------------------------------------------------------
+        | MESMA CASA
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            casaSelecionada.linha === linha &&
+            casaSelecionada.coluna === coluna
+        ) {
+
+            limparSelecao();
+
+            return;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | OUTRA PEÇA DA MESMA COR
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            peca &&
+            corDaPeca(peca) === turno
+        ) {
+
+            limparSelecao();
+
+            casaSelecionada = {
+                linha,
+                coluna
+            };
+
+            mostrarMovimentos(
+                linha,
+                coluna
+            );
+
+            return;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | VERIFICAR MOVIMENTO
+        |--------------------------------------------------------------------------
+        */
+
+        const movimentos =
+            movimentosLegais(
+                casaSelecionada.linha,
+                casaSelecionada.coluna
+            );
+
+        const movimentoPermitido =
+            movimentos.some(
+                ([l, c]) =>
+                    l === linha &&
+                    c === coluna
+            );
+
+        if (!movimentoPermitido) {
+            return;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | MOVER
+        |--------------------------------------------------------------------------
+        */
+
+        const resultado =
+            moverPeca(
+                casaSelecionada,
+                {
+                    linha,
+                    coluna
+                }
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PROMOÇÃO
+        |--------------------------------------------------------------------------
+        */
+
+        if (resultado === 'promocao') {
+
+            limparSelecao();
+
+            return;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | TROCAR TURNO
+        |--------------------------------------------------------------------------
+        */
+
+        turno =
+            turno === 'w'
+                ? 'b'
+                : 'w';
+
+        limparSelecao();
+
+        atualizarXeque();
+
+        verificarFimDeJogo();
     }
-}
+);
 
 
-// =====================================================
-// VERIFICAÇÃO INICIAL
-// =====================================================
+/*
+|--------------------------------------------------------------------------
+| INICIAR
+|--------------------------------------------------------------------------
+*/
+
+criarTabuleiro();
 
 atualizarXeque();
