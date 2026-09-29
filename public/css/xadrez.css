@@ -28,6 +28,8 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+
+    position: relative;
 }
 
 .clara {
@@ -52,13 +54,35 @@ body {
 
 .movimento::after {
     content: "";
+
     width: 20%;
     height: 20%;
+
     background: rgba(0, 0, 0, 0.25);
+
     border-radius: 50%;
+
     position: absolute;
+
+    left: 50%;
+    top: 50%;
+
+    transform: translate(-50%, -50%);
+
+    pointer-events: none;
 }
 
-.casa {
-    position: relative;
+.movimento.captura::after {
+    width: 75%;
+    height: 75%;
+
+    background: transparent;
+
+    border: 5px solid rgba(0, 0, 0, 0.25);
+
+    box-sizing: border-box;
+}
+
+.xeque {
+    box-shadow: inset 0 0 0 5px rgba(220, 0, 0, 0.8);
 }
