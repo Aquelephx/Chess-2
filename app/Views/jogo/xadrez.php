@@ -1,3 +1,24 @@
+<?php
+$conexao = new mysqli("localhost", "root", "", "chesspontocom");
+
+if ($conexao->connect_error) {
+    die("Falha na conexão: " . $conexao->connect_error);
+}
+
+// Procura o tema ativo na tabela 'temas'
+$sql = "SELECT cor_clara, cor_escura FROM temas WHERE ativo = 1 LIMIT 1";
+$resultado = $conexao->query($sql);
+
+if ($resultado && $resultado->num_rows > 0) {
+    $tema = $resultado->fetch_assoc();
+    $corClara = $tema['cor_clara'];
+    $corEscura = $tema['cor_escura'];
+} else {
+    // Caso não exista tema ativo no banco, usa um fallback de segurança
+    $corClara = '#f0d9b5';
+    $corEscura = '#b58863';
+}
+?>
 <!DOCTYPE html>
 <html lang="pt-BR">
 
@@ -7,8 +28,17 @@
     <title>Xadrez</title>
     <link rel="icon" href="<?= base_url('img/rs/bingus.png') ?>" type="image/png">
     <link rel="stylesheet" href="<?= base_url('css/xadrez.css') ?>">
-</head>
 
+    <!-- Injeta EXCLUSIVAMENTE as cores vindas da consulta SQL -->
+    <style>
+        .casa.clara {
+            background-color: <?= $corClara ?> !important;
+        }
+        .casa.escura {
+            background-color: <?= $corEscura ?> !important;
+        }
+    </style>
+</head>
 <body>
     <main class="jogo">
 

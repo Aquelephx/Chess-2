@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Tempo de geração: 28/09/2026 às 19:11
+-- Tempo de geração: 30/09/2026 às 03:43
 -- Versão do servidor: 10.4.32-MariaDB
 -- Versão do PHP: 8.2.12
 
@@ -31,7 +31,9 @@ CREATE TABLE `games` (
   `id` int(11) NOT NULL,
   `current_fen` varchar(100) NOT NULL,
   `status` varchar(20) DEFAULT 'in_progress',
-  `created_at` datetime DEFAULT current_timestamp()
+  `created_at` datetime DEFAULT current_timestamp(),
+  `cor_clara` varchar(7) NOT NULL DEFAULT '#7a9e76',
+  `cor_escura` varchar(7) NOT NULL DEFAULT '#753b3b'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -46,6 +48,30 @@ CREATE TABLE `login` (
   `gmail` varchar(50) NOT NULL,
   `senha` varchar(50) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estrutura para tabela `temas`
+--
+
+CREATE TABLE `temas` (
+  `id` int(11) NOT NULL,
+  `nome_tema` varchar(50) NOT NULL,
+  `cor_clara` varchar(7) NOT NULL,
+  `cor_escura` varchar(7) NOT NULL,
+  `ativo` tinyint(1) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Despejando dados para a tabela `temas`
+--
+
+INSERT INTO `temas` (`id`, `nome_tema`, `cor_clara`, `cor_escura`, `ativo`) VALUES
+(1, 'Chessdochina', '#f0d9b5', '#b58863', 1),
+(2, 'Verde Chess.com', '#eeeed2', '#769656', 3),
+(3, 'Azul Marinho', '#e1e8ed', '#4b7399', 0),
+(4, 'chesslivia', '#7a9e76', '#753b3b', 2);
 
 --
 -- Índices para tabelas despejadas
@@ -64,6 +90,12 @@ ALTER TABLE `login`
   ADD PRIMARY KEY (`ID`);
 
 --
+-- Índices de tabela `temas`
+--
+ALTER TABLE `temas`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- AUTO_INCREMENT para tabelas despejadas
 --
 
@@ -78,6 +110,12 @@ ALTER TABLE `games`
 --
 ALTER TABLE `login`
   MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de tabela `temas`
+--
+ALTER TABLE `temas`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
